@@ -20,13 +20,13 @@ const ChatInput = ({ onSend }: ChatInputProps) => {
         <button className="p-2.5 text-muted-foreground hover:text-primary transition-colors rounded-full hover:bg-primary/10">
           <Camera className="w-5 h-5" />
         </button>
-        <div className="flex-1 flex items-end bg-secondary rounded-2xl px-3 py-1.5">
+        <div className="flex-1 flex items-end bg-card rounded-2xl px-3 py-1.5 border border-border">
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             placeholder="Type a message..."
-            className="flex-1 bg-transparent text-sm py-1.5 outline-none placeholder:text-muted-foreground"
+            className="flex-1 bg-transparent text-sm py-1.5 outline-none text-card-foreground placeholder:text-muted-foreground"
           />
           <button className="p-1.5 text-muted-foreground hover:text-primary transition-colors">
             <Sparkles className="w-4 h-4" />
