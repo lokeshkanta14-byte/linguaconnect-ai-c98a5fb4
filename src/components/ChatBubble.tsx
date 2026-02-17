@@ -4,9 +4,11 @@ interface ChatBubbleProps {
   sent: boolean;
   translated?: string;
   language?: string;
+  audioUrl?: string;
+  imageUrl?: string;
 }
 
-const ChatBubble = ({ message, time, sent, translated, language }: ChatBubbleProps) => {
+const ChatBubble = ({ message, time, sent, translated, language, audioUrl, imageUrl }: ChatBubbleProps) => {
   return (
     <div className={`flex ${sent ? "justify-end" : "justify-start"} mb-2 animate-fade-in`}>
       <div
@@ -16,7 +18,13 @@ const ChatBubble = ({ message, time, sent, translated, language }: ChatBubblePro
             : "bg-chat-received text-chat-received-foreground rounded-bl-md"
         }`}
       >
-        <p className="text-sm leading-relaxed">{message}</p>
+        {imageUrl && (
+          <img src={imageUrl} alt="Shared photo" className="rounded-lg mb-1.5 max-w-full max-h-60 object-cover" />
+        )}
+        {audioUrl && (
+          <audio controls src={audioUrl} className="max-w-full mb-1.5" style={{ height: 36 }} />
+        )}
+        {message && <p className="text-sm leading-relaxed">{message}</p>}
         {translated && (
           <div className={`mt-1.5 pt-1.5 border-t ${sent ? "border-primary-foreground/20" : "border-border"}`}>
             <p className="text-xs opacity-80 italic">{translated}</p>
