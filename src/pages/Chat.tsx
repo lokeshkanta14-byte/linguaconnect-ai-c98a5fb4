@@ -5,7 +5,18 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import ChatBubble from "@/components/ChatBubble";
 import ChatInput from "@/components/ChatInput";
 
-const mockMessages = [
+interface Message {
+  id: string;
+  message: string;
+  time: string;
+  sent: boolean;
+  translated?: string;
+  language?: string;
+  audioUrl?: string;
+  imageUrl?: string;
+}
+
+const mockMessages: Message[] = [
   { id: "1", message: "Hey! How are you?", time: "2:25 PM", sent: false },
   { id: "2", message: "నేను బాగున్నాను, మీరు?", time: "2:26 PM", sent: false, translated: "I'm fine, how about you?", language: "English" },
   { id: "3", message: "I'm great! Want to meet for coffee?", time: "2:28 PM", sent: true },
@@ -27,20 +38,22 @@ const contactNames: Record<string, string> = {
 const Chat = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [messages, setMessages] = useState(mockMessages);
+  const [messages, setMessages] = useState<Message[]>(mockMessages);
   const name = contactNames[id || "1"] || "Unknown";
   const initials = name.split(" ").map(n => n[0]).join("");
 
+  const now = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
   const handleSend = (text: string) => {
-    setMessages(prev => [
-      ...prev,
-      {
-        id: String(Date.now()),
-        message: text,
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        sent: true,
-      },
-    ]);
+    setMessages(prev => [...prev, { id: String(Date.now()), message: text, time: now(), sent: true }]);
+  };
+
+  const handleSendAudio = (audioUrl: string) => {
+    setMessages(prev => [...prev, { id: String(Date.now()), message: "", time: now(), sent: true, audioUrl }]);
+  };
+
+  const handleSendImage = (imageUrl: string) => {
+    setMessages(prev => [...prev, { id: String(Date.now()), message: "", time: now(), sent: true, imageUrl }]);
   };
 
   return (
@@ -86,7 +99,7 @@ const Chat = () => {
         ))}
       </div>
 
-      <ChatInput onSend={handleSend} />
+      <ChatInput onSend={handleSend} onSendAudio={handleSendAudio} onSendImage={handleSendImage} />
     </div>
   );
 };
