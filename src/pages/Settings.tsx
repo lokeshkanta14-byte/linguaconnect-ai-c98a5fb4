@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { User, Globe, Bell, Shield, Palette, LogOut, ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from "@/contexts/AuthContext";
 
 const settingsGroups = [
   {
@@ -22,6 +23,15 @@ const settingsGroups = [
 
 const Settings = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+
+  const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
+  const initials = displayName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -29,17 +39,16 @@ const Settings = () => {
         <h1 className="text-xl font-bold font-display">Settings</h1>
       </div>
 
-      {/* Profile Card */}
       <button
         onClick={() => navigate("/profile")}
         className="flex items-center gap-3 px-4 py-4 w-full hover:bg-secondary/50 transition-colors"
       >
         <Avatar className="w-14 h-14">
-          <AvatarFallback className="bg-primary/10 text-primary font-bold text-lg font-display">AK</AvatarFallback>
+          <AvatarFallback className="bg-primary/10 text-primary font-bold text-lg font-display">{initials}</AvatarFallback>
         </Avatar>
         <div className="flex-1 text-left">
-          <p className="font-semibold">Arun Kumar</p>
-          <p className="text-sm text-muted-foreground">arun@email.com</p>
+          <p className="font-semibold">{displayName}</p>
+          <p className="text-sm text-muted-foreground">{user?.email || ""}</p>
         </div>
         <ChevronRight className="w-4 h-4 text-muted-foreground" />
       </button>
@@ -72,7 +81,7 @@ const Settings = () => {
       ))}
 
       <button
-        onClick={() => navigate("/login")}
+        onClick={handleLogout}
         className="flex items-center gap-3 px-4 py-3 w-full hover:bg-secondary/50 transition-colors mt-2"
       >
         <div className="w-9 h-9 rounded-xl bg-destructive/10 flex items-center justify-center">
