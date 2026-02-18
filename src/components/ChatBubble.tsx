@@ -1,3 +1,5 @@
+import { Ban } from "lucide-react";
+
 interface ChatBubbleProps {
   message: string;
   time: string;
@@ -6,11 +8,34 @@ interface ChatBubbleProps {
   language?: string;
   audioUrl?: string;
   imageUrl?: string;
+  deleted?: boolean;
+  deletedForEveryone?: boolean;
+  onLongPress?: () => void;
 }
 
-const ChatBubble = ({ message, time, sent, translated, language, audioUrl, imageUrl }: ChatBubbleProps) => {
+const ChatBubble = ({ message, time, sent, translated, language, audioUrl, imageUrl, deleted, deletedForEveryone, onLongPress }: ChatBubbleProps) => {
+  if (deleted || deletedForEveryone) {
+    return (
+      <div className={`flex ${sent ? "justify-end" : "justify-start"} mb-2 animate-fade-in`}>
+        <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 ${
+          sent ? "bg-chat-sent/50 rounded-br-md" : "bg-chat-received/50 rounded-bl-md"
+        }`}>
+          <p className="text-xs italic text-muted-foreground flex items-center gap-1.5">
+            <Ban className="w-3 h-3" />
+            {deletedForEveryone ? "This message was deleted" : "You deleted this message"}
+          </p>
+          <p className={`text-[10px] mt-1 text-right ${sent ? "opacity-60" : "text-muted-foreground"}`}>{time}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={`flex ${sent ? "justify-end" : "justify-start"} mb-2 animate-fade-in`}>
+    <div
+      className={`flex ${sent ? "justify-end" : "justify-start"} mb-2 animate-fade-in`}
+      onContextMenu={(e) => { e.preventDefault(); onLongPress?.(); }}
+      onClick={(e) => { if (e.detail === 2) onLongPress?.(); }}
+    >
       <div
         className={`max-w-[80%] rounded-2xl px-3.5 py-2 ${
           sent

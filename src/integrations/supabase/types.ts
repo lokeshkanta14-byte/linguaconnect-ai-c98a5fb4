@@ -14,7 +14,137 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      emergency_contacts: {
+        Row: {
+          created_at: string
+          id: string
+          is_primary: boolean
+          name: string
+          phone: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          name: string
+          phone: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          name?: string
+          phone?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      message_deletions: {
+        Row: {
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_deletions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          audio_url: string | null
+          created_at: string
+          deleted_for_everyone: boolean
+          id: string
+          image_url: string | null
+          language: string | null
+          message: string | null
+          receiver_id: string
+          sender_id: string
+          translated: string | null
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string
+          deleted_for_everyone?: boolean
+          id?: string
+          image_url?: string | null
+          language?: string | null
+          message?: string | null
+          receiver_id: string
+          sender_id: string
+          translated?: string | null
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string
+          deleted_for_everyone?: boolean
+          id?: string
+          image_url?: string | null
+          language?: string | null
+          message?: string | null
+          receiver_id?: string
+          sender_id?: string
+          translated?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string
+          email: string | null
+          id: string
+          phone: string | null
+          preferred_language: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string
+          email?: string | null
+          id?: string
+          phone?: string | null
+          preferred_language?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string
+          email?: string | null
+          id?: string
+          phone?: string | null
+          preferred_language?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -4,6 +4,7 @@ import { ArrowLeft, Phone, Video, MoreVertical } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import ChatBubble from "@/components/ChatBubble";
 import ChatInput from "@/components/ChatInput";
+import MessageActions from "@/components/MessageActions";
 
 interface Message {
   id: string;
@@ -14,6 +15,8 @@ interface Message {
   language?: string;
   audioUrl?: string;
   imageUrl?: string;
+  deleted?: boolean;
+  deletedForEveryone?: boolean;
 }
 
 const mockMessages: Message[] = [
@@ -39,6 +42,7 @@ const Chat = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const name = contactNames[id || "1"] || "Unknown";
   const initials = name.split(" ").map(n => n[0]).join("");
 
@@ -55,6 +59,18 @@ const Chat = () => {
   const handleSendImage = (imageUrl: string) => {
     setMessages(prev => [...prev, { id: String(Date.now()), message: "", time: now(), sent: true, imageUrl }]);
   };
+
+  const handleDeleteForMe = (msgId: string) => {
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, deleted: true } : m));
+    setSelectedMessageId(null);
+  };
+
+  const handleDeleteForEveryone = (msgId: string) => {
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, deletedForEveryone: true } : m));
+    setSelectedMessageId(null);
+  };
+
+  const selectedMsg = messages.find(m => m.id === selectedMessageId);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -95,11 +111,25 @@ const Chat = () => {
           </span>
         </div>
         {messages.map((msg) => (
-          <ChatBubble key={msg.id} {...msg} />
+          <ChatBubble
+            key={msg.id}
+            {...msg}
+            onLongPress={() => !msg.deleted && !msg.deletedForEveryone && setSelectedMessageId(msg.id)}
+          />
         ))}
       </div>
 
       <ChatInput onSend={handleSend} onSendAudio={handleSendAudio} onSendImage={handleSendImage} />
+
+      {selectedMessageId && selectedMsg && (
+        <MessageActions
+          messageId={selectedMessageId}
+          isSent={selectedMsg.sent}
+          onDeleteForMe={handleDeleteForMe}
+          onDeleteForEveryone={handleDeleteForEveryone}
+          onClose={() => setSelectedMessageId(null)}
+        />
+      )}
     </div>
   );
 };
