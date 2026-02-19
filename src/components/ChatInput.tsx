@@ -1,24 +1,26 @@
 import { useState, useRef, useCallback } from "react";
-import { Send, Mic, Camera, Sparkles, X, Square } from "lucide-react";
+import { Send, Mic, Paperclip, Sparkles, X, Square } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import AttachmentMenu from "./AttachmentMenu";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
   onSendAudio?: (audioUrl: string) => void;
   onSendImage?: (imageUrl: string) => void;
+  onSendLocation?: () => void;
 }
 
-const ChatInput = ({ onSend, onSendAudio, onSendImage }: ChatInputProps) => {
+const ChatInput = ({ onSend, onSendAudio, onSendImage, onSendLocation }: ChatInputProps) => {
   const [text, setText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [showCamera, setShowCamera] = useState(false);
+  const [showAttach, setShowAttach] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleSend = () => {
     if (!text.trim()) return;
@@ -32,28 +34,19 @@ const ChatInput = ({ onSend, onSendAudio, onSendImage }: ChatInputProps) => {
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
-      };
-
+      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         const audioUrl = URL.createObjectURL(audioBlob);
         onSendAudio?.(audioUrl);
         stream.getTracks().forEach((t) => t.stop());
       };
-
       mediaRecorder.start();
       setIsRecording(true);
       setRecordingTime(0);
       timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
     } catch {
-      toast({
-        title: "Microphone access denied",
-        description: "Please allow microphone access in your browser settings.",
-        variant: "destructive",
-      });
+      toast({ title: "Microphone access denied", description: "Please allow microphone access.", variant: "destructive" });
     }
   }, [onSendAudio]);
 
@@ -77,20 +70,14 @@ const ChatInput = ({ onSend, onSendAudio, onSendImage }: ChatInputProps) => {
 
   const openCamera = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
       streamRef.current = stream;
       setShowCamera(true);
       setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play();
-        }
+        if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play(); }
       }, 100);
     } catch {
-      // Fallback to file input if camera not available
-      fileInputRef.current?.click();
+      toast({ title: "Camera not available", variant: "destructive" });
     }
   }, []);
 
@@ -111,20 +98,8 @@ const ChatInput = ({ onSend, onSendAudio, onSendImage }: ChatInputProps) => {
     setShowCamera(false);
   }, []);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") onSendImage?.(reader.result);
-    };
-    reader.readAsDataURL(file);
-    e.target.value = "";
-  };
-
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
-  // Camera overlay
   if (showCamera) {
     return (
       <div className="fixed inset-0 z-50 bg-black flex flex-col">
@@ -139,7 +114,6 @@ const ChatInput = ({ onSend, onSendAudio, onSendImage }: ChatInputProps) => {
     );
   }
 
-  // Recording state
   if (isRecording) {
     return (
       <div className="fixed bottom-0 left-0 right-0 z-40 glass safe-bottom">
@@ -160,11 +134,17 @@ const ChatInput = ({ onSend, onSendAudio, onSendImage }: ChatInputProps) => {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 glass safe-bottom">
-      <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileSelect} />
+    <div className="fixed bottom-0 left-0 right-0 z-40 glass safe-bottom relative">
+      <AttachmentMenu
+        open={showAttach}
+        onClose={() => setShowAttach(false)}
+        onSendImage={(url) => onSendImage?.(url)}
+        onSendLocation={() => onSendLocation?.()}
+        onOpenCamera={openCamera}
+      />
       <div className="flex items-end gap-2 px-3 py-2 max-w-3xl mx-auto">
-        <button onClick={openCamera} className="p-2.5 text-muted-foreground hover:text-primary transition-colors rounded-full hover:bg-primary/10">
-          <Camera className="w-5 h-5" />
+        <button onClick={() => setShowAttach(!showAttach)} className="p-2.5 text-muted-foreground hover:text-primary transition-colors rounded-full hover:bg-primary/10">
+          <Paperclip className="w-5 h-5" />
         </button>
         <div className="flex-1 flex items-end bg-card rounded-2xl px-3 py-1.5 border border-border">
           <input
