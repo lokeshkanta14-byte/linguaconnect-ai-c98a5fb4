@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Phone, Video, MoreVertical } from "lucide-react";
+import { ArrowLeft, Phone, Video, MoreVertical, MapPin } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import ChatBubble from "@/components/ChatBubble";
 import ChatInput from "@/components/ChatInput";
 import MessageActions from "@/components/MessageActions";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface Message {
   id: string;
@@ -29,13 +31,8 @@ const mockMessages: Message[] = [
 ];
 
 const contactNames: Record<string, string> = {
-  "1": "Priya Sharma",
-  "2": "Rahul Verma",
-  "3": "Ananya Reddy",
-  "4": "Vikram Patel",
-  "5": "Lakshmi Devi",
-  "6": "Arjun Kumar",
-  "7": "Meera Iyer",
+  "1": "Priya Sharma", "2": "Rahul Verma", "3": "Ananya Reddy",
+  "4": "Vikram Patel", "5": "Lakshmi Devi", "6": "Arjun Kumar", "7": "Meera Iyer",
 };
 
 const Chat = () => {
@@ -48,8 +45,28 @@ const Chat = () => {
 
   const now = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  const handleSend = (text: string) => {
-    setMessages(prev => [...prev, { id: String(Date.now()), message: text, time: now(), sent: true }]);
+  const translateMessage = async (text: string): Promise<{ translated: string; language: string } | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke("translate", {
+        body: { text, targetLanguage: "English" },
+      });
+      if (error || !data?.translated) return null;
+      if (data.translated.trim().toLowerCase() === text.trim().toLowerCase()) return null;
+      return { translated: data.translated, language: "English" };
+    } catch {
+      return null;
+    }
+  };
+
+  const handleSend = async (text: string) => {
+    const msgId = String(Date.now());
+    setMessages(prev => [...prev, { id: msgId, message: text, time: now(), sent: true }]);
+
+    // Auto-translate for demo: translate sent message as if receiver's language differs
+    const result = await translateMessage(text);
+    if (result) {
+      setMessages(prev => prev.map(m => m.id === msgId ? { ...m, translated: result.translated, language: result.language } : m));
+    }
   };
 
   const handleSendAudio = (audioUrl: string) => {
@@ -58,6 +75,22 @@ const Chat = () => {
 
   const handleSendImage = (imageUrl: string) => {
     setMessages(prev => [...prev, { id: String(Date.now()), message: "", time: now(), sent: true, imageUrl }]);
+  };
+
+  const handleSendLocation = () => {
+    if (!navigator.geolocation) {
+      toast({ title: "Geolocation not supported", variant: "destructive" });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const locationMsg = `📍 Location: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+        setMessages(prev => [...prev, { id: String(Date.now()), message: locationMsg, time: now(), sent: true }]);
+        toast({ title: "Location shared!" });
+      },
+      () => toast({ title: "Location access denied", variant: "destructive" })
+    );
   };
 
   const handleDeleteForMe = (msgId: string) => {
@@ -90,10 +123,16 @@ const Chat = () => {
             <p className="text-[11px] text-online font-medium">Online</p>
           </div>
           <div className="flex items-center gap-1">
-            <button className="p-2 hover:bg-secondary rounded-full transition-colors text-muted-foreground">
+            <button
+              onClick={() => navigate(`/voice-call/${id}`)}
+              className="p-2 hover:bg-secondary rounded-full transition-colors text-muted-foreground"
+            >
               <Phone className="w-4 h-4" />
             </button>
-            <button className="p-2 hover:bg-secondary rounded-full transition-colors text-muted-foreground">
+            <button
+              onClick={() => navigate(`/video-call/${id}`)}
+              className="p-2 hover:bg-secondary rounded-full transition-colors text-muted-foreground"
+            >
               <Video className="w-4 h-4" />
             </button>
             <button className="p-2 hover:bg-secondary rounded-full transition-colors text-muted-foreground">
@@ -106,9 +145,7 @@ const Chat = () => {
       {/* Messages */}
       <div className="flex-1 px-3 py-4 pb-20 overflow-y-auto">
         <div className="text-center mb-4">
-          <span className="text-[11px] text-muted-foreground bg-secondary px-3 py-1 rounded-full">
-            Today
-          </span>
+          <span className="text-[11px] text-muted-foreground bg-secondary px-3 py-1 rounded-full">Today</span>
         </div>
         {messages.map((msg) => (
           <ChatBubble
@@ -119,7 +156,12 @@ const Chat = () => {
         ))}
       </div>
 
-      <ChatInput onSend={handleSend} onSendAudio={handleSendAudio} onSendImage={handleSendImage} />
+      <ChatInput
+        onSend={handleSend}
+        onSendAudio={handleSendAudio}
+        onSendImage={handleSendImage}
+        onSendLocation={handleSendLocation}
+      />
 
       {selectedMessageId && selectedMsg && (
         <MessageActions

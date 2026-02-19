@@ -40,17 +40,8 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Language filter chips */}
-      <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar">
-        {["All", "English", "Telugu", "Hindi"].map((lang) => (
-          <button
-            key={lang}
-            className="px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground transition-colors first:bg-primary first:text-primary-foreground"
-          >
-            {lang}
-          </button>
-        ))}
-      </div>
+      {/* Spacer */}
+      <div className="h-2" />
 
       {/* Chat list */}
       <div className="divide-y divide-border">

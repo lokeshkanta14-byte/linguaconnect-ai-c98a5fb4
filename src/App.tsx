@@ -14,6 +14,9 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import SOS from "./pages/SOS";
 import MusicPlayer from "./pages/MusicPlayer";
+import VoiceCall from "./pages/VoiceCall";
+import VideoCall from "./pages/VideoCall";
+import IncomingCall from "./pages/IncomingCall";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +38,9 @@ const App = () => (
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/sos" element={<ProtectedRoute><SOS /></ProtectedRoute>} />
               <Route path="/music" element={<ProtectedRoute><MusicPlayer /></ProtectedRoute>} />
+              <Route path="/voice-call/:id" element={<ProtectedRoute><VoiceCall /></ProtectedRoute>} />
+              <Route path="/video-call/:id" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
+              <Route path="/incoming-call/:id/:type" element={<ProtectedRoute><IncomingCall /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <BottomNav />
