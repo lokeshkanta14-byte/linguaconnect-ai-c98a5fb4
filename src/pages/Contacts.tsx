@@ -1,30 +1,30 @@
-import { Search } from "lucide-react";
+import { Search, UserPlus, Check, X } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-
-const contacts = [
-  { id: "1", name: "Priya Sharma", language: "Telugu", online: true },
-  { id: "2", name: "Rahul Verma", language: "English", online: true },
-  { id: "3", name: "Ananya Reddy", language: "Hindi", online: false },
-  { id: "4", name: "Vikram Patel", language: "English", online: false },
-  { id: "5", name: "Lakshmi Devi", language: "Telugu", online: true },
-  { id: "6", name: "Arjun Kumar", language: "English", online: false },
-  { id: "7", name: "Meera Iyer", language: "Hindi", online: false },
-  { id: "8", name: "Sanjay Rao", language: "Telugu", online: true },
-  { id: "9", name: "Deepa Nair", language: "Hindi", online: false },
-];
+import { useFriends, FriendProfile, FriendRequest } from "@/hooks/useFriends";
 
 const Contacts = () => {
+  const navigate = useNavigate();
+  const { friends, pendingReceived, loading, acceptRequest, rejectRequest } = useFriends();
   const [search, setSearch] = useState("");
-  const filtered = contacts.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
-  const onlineContacts = filtered.filter(c => c.online);
-  const offlineContacts = filtered.filter(c => !c.online);
+
+  const filtered = friends.filter((f) =>
+    f.display_name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-background pb-20">
       <div className="sticky top-0 z-30 glass px-4 pt-4 pb-3">
-        <h1 className="text-xl font-bold font-display mb-3">Contacts</h1>
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-xl font-bold font-display">Contacts</h1>
+          <button
+            onClick={() => navigate("/find-users")}
+            className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
+          >
+            <UserPlus className="w-5 h-5" />
+          </button>
+        </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
@@ -36,49 +36,107 @@ const Contacts = () => {
         </div>
       </div>
 
-      {onlineContacts.length > 0 && (
+      {/* Pending friend requests */}
+      {pendingReceived.length > 0 && (
         <div className="px-4 pt-3">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Online — {onlineContacts.length}</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            Friend Requests — {pendingReceived.length}
+          </p>
           <div className="space-y-1">
-            {onlineContacts.map(c => (
-              <ContactRow key={c.id} {...c} />
+            {pendingReceived.map((req) => (
+              <RequestRow key={req.id} request={req} onAccept={acceptRequest} onReject={rejectRequest} />
             ))}
           </div>
         </div>
       )}
 
-      {offlineContacts.length > 0 && (
+      {/* Friends list */}
+      {loading ? (
+        <p className="text-sm text-muted-foreground text-center py-12">Loading contacts...</p>
+      ) : filtered.length > 0 ? (
         <div className="px-4 pt-4">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Offline — {offlineContacts.length}</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            Friends — {filtered.length}
+          </p>
           <div className="space-y-1">
-            {offlineContacts.map(c => (
-              <ContactRow key={c.id} {...c} />
+            {filtered.map((f) => (
+              <FriendRow key={f.user_id} friend={f} />
             ))}
           </div>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+          <UserPlus className="w-10 h-10 mb-3 opacity-40" />
+          <p className="text-sm">No contacts yet</p>
+          <button
+            onClick={() => navigate("/find-users")}
+            className="mt-3 text-sm text-primary font-semibold hover:underline"
+          >
+            Find users to connect
+          </button>
         </div>
       )}
     </div>
   );
 };
 
-const ContactRow = ({ id, name, language, online }: { id: string; name: string; language: string; online: boolean }) => {
-  const initials = name.split(" ").map(n => n[0]).join("");
+const FriendRow = ({ friend }: { friend: FriendProfile }) => {
+  const initials = friend.display_name.split(" ").map((n) => n[0]).join("").slice(0, 2);
   return (
     <Link
-      to={`/chat/${id}`}
+      to={`/chat/${friend.user_id}`}
       className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/50 transition-colors animate-fade-in"
     >
-      <div className="relative">
-        <Avatar className="w-11 h-11">
-          <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm font-display">{initials}</AvatarFallback>
-        </Avatar>
-        {online && <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-online border-2 border-background" />}
-      </div>
+      <Avatar className="w-11 h-11">
+        <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm font-display">
+          {initials}
+        </AvatarFallback>
+      </Avatar>
       <div className="flex-1">
-        <p className="text-sm font-semibold">{name}</p>
-        <p className="text-xs text-muted-foreground">Prefers {language}</p>
+        <p className="text-sm font-semibold">{friend.display_name}</p>
+        <p className="text-xs text-muted-foreground">Prefers {friend.preferred_language}</p>
       </div>
     </Link>
+  );
+};
+
+const RequestRow = ({
+  request,
+  onAccept,
+  onReject,
+}: {
+  request: FriendRequest;
+  onAccept: (id: string) => void;
+  onReject: (id: string) => void;
+}) => {
+  const name = request.sender?.display_name || "Unknown";
+  const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2);
+  return (
+    <div className="flex items-center gap-3 p-2.5 rounded-xl bg-secondary/30 animate-fade-in">
+      <Avatar className="w-11 h-11">
+        <AvatarFallback className="bg-primary/10 text-primary font-semibold text-sm font-display">
+          {initials}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold truncate">{name}</p>
+        <p className="text-xs text-muted-foreground">Wants to connect</p>
+      </div>
+      <div className="flex gap-1.5">
+        <button
+          onClick={() => onAccept(request.id)}
+          className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+        >
+          <Check className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => onReject(request.id)}
+          className="p-2 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
   );
 };
 

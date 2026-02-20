@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Phone, Video, MoreVertical, MapPin } from "lucide-react";
+import { ArrowLeft, Phone, Video, MoreVertical, MapPin, ShieldAlert } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import ChatBubble from "@/components/ChatBubble";
 import ChatInput from "@/components/ChatInput";
 import MessageActions from "@/components/MessageActions";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
 interface Message {
@@ -21,27 +22,37 @@ interface Message {
   deletedForEveryone?: boolean;
 }
 
-const mockMessages: Message[] = [
-  { id: "1", message: "Hey! How are you?", time: "2:25 PM", sent: false },
-  { id: "2", message: "నేను బాగున్నాను, మీరు?", time: "2:26 PM", sent: false, translated: "I'm fine, how about you?", language: "English" },
-  { id: "3", message: "I'm great! Want to meet for coffee?", time: "2:28 PM", sent: true },
-  { id: "4", message: "అవును, ఎక్కడ కలుద్దాం?", time: "2:29 PM", sent: false, translated: "Yes, where shall we meet?", language: "English" },
-  { id: "5", message: "How about the new café near City Center?", time: "2:30 PM", sent: true },
-  { id: "6", message: "Perfect! See you at 5 PM", time: "2:30 PM", sent: false },
-];
-
-const contactNames: Record<string, string> = {
-  "1": "Priya Sharma", "2": "Rahul Verma", "3": "Ananya Reddy",
-  "4": "Vikram Patel", "5": "Lakshmi Devi", "6": "Arjun Kumar", "7": "Meera Iyer",
-};
-
 const Chat = () => {
-  const { id } = useParams();
+  const { id: recipientId } = useParams();
   const navigate = useNavigate();
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
-  const name = contactNames[id || "1"] || "Unknown";
-  const initials = name.split(" ").map(n => n[0]).join("");
+  const [contactName, setContactName] = useState("...");
+  const [isFriend, setIsFriend] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!recipientId || !user) return;
+    // Check friendship
+    const checkFriend = async () => {
+      const { data } = await supabase.rpc("are_friends", { user_a: user.id, user_b: recipientId });
+      setIsFriend(!!data);
+    };
+    // Fetch contact name
+    const fetchName = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("user_id", recipientId)
+        .single();
+      setContactName(data?.display_name || "Unknown");
+    };
+    checkFriend();
+    fetchName();
+  }, [recipientId, user]);
+
+  const name = contactName;
+  const initials = name.split(" ").map(n => n[0]).join("").slice(0, 2);
 
   const now = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
@@ -124,13 +135,13 @@ const Chat = () => {
           </div>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => navigate(`/voice-call/${id}`)}
+              onClick={() => navigate(`/voice-call/${recipientId}`)}
               className="p-2 hover:bg-secondary rounded-full transition-colors text-muted-foreground"
             >
               <Phone className="w-4 h-4" />
             </button>
             <button
-              onClick={() => navigate(`/video-call/${id}`)}
+              onClick={() => navigate(`/video-call/${recipientId}`)}
               className="p-2 hover:bg-secondary rounded-full transition-colors text-muted-foreground"
             >
               <Video className="w-4 h-4" />
@@ -142,26 +153,39 @@ const Chat = () => {
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 px-3 py-4 pb-20 overflow-y-auto">
-        <div className="text-center mb-4">
-          <span className="text-[11px] text-muted-foreground bg-secondary px-3 py-1 rounded-full">Today</span>
+      {/* Friendship gate */}
+      {isFriend === false && (
+        <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground px-6">
+          <ShieldAlert className="w-12 h-12 mb-3 opacity-40" />
+          <p className="text-sm font-medium text-center">You need to be friends to chat</p>
+          <p className="text-xs text-center mt-1">Send a friend request from the Contacts tab</p>
         </div>
-        {messages.map((msg) => (
-          <ChatBubble
-            key={msg.id}
-            {...msg}
-            onLongPress={() => !msg.deleted && !msg.deletedForEveryone && setSelectedMessageId(msg.id)}
-          />
-        ))}
-      </div>
+      )}
 
-      <ChatInput
-        onSend={handleSend}
-        onSendAudio={handleSendAudio}
-        onSendImage={handleSendImage}
-        onSendLocation={handleSendLocation}
-      />
+      {isFriend !== false && (
+        <>
+          {/* Messages */}
+          <div className="flex-1 px-3 py-4 pb-20 overflow-y-auto">
+            <div className="text-center mb-4">
+              <span className="text-[11px] text-muted-foreground bg-secondary px-3 py-1 rounded-full">Today</span>
+            </div>
+            {messages.map((msg) => (
+              <ChatBubble
+                key={msg.id}
+                {...msg}
+                onLongPress={() => !msg.deleted && !msg.deletedForEveryone && setSelectedMessageId(msg.id)}
+              />
+            ))}
+          </div>
+
+          <ChatInput
+            onSend={handleSend}
+            onSendAudio={handleSendAudio}
+            onSendImage={handleSendImage}
+            onSendLocation={handleSendLocation}
+          />
+        </>
+      )}
 
       {selectedMessageId && selectedMsg && (
         <MessageActions

@@ -17,6 +17,7 @@ import MusicPlayer from "./pages/MusicPlayer";
 import VoiceCall from "./pages/VoiceCall";
 import VideoCall from "./pages/VideoCall";
 import IncomingCall from "./pages/IncomingCall";
+import FindUsers from "./pages/FindUsers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/voice-call/:id" element={<ProtectedRoute><VoiceCall /></ProtectedRoute>} />
               <Route path="/video-call/:id" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
               <Route path="/incoming-call/:id/:type" element={<ProtectedRoute><IncomingCall /></ProtectedRoute>} />
+              <Route path="/find-users" element={<ProtectedRoute><FindUsers /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <BottomNav />
