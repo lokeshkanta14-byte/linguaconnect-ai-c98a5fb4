@@ -20,22 +20,32 @@ const FindUsers = () => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<UserResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   const friendIds = new Set(friends.map((f) => f.user_id));
   const pendingIds = new Set(pendingSent.map((r) => r.receiver_id));
 
-  const handleSearch = async () => {
-    if (!query.trim() || !user) return;
+  const loadUsers = async (search?: string) => {
+    if (!user) return;
     setSearching(true);
-    const { data } = await supabase
+    let q = supabase
       .from("profiles")
       .select("user_id, display_name, preferred_language, avatar_url")
-      .ilike("display_name", `%${query.trim()}%`)
       .neq("user_id", user.id)
-      .limit(20);
+      .limit(50);
+    if (search?.trim()) {
+      q = q.ilike("display_name", `%${search.trim()}%`);
+    }
+    const { data } = await q;
     setResults(data || []);
     setSearching(false);
+    setLoaded(true);
   };
+
+  // Load all users on mount
+  useState(() => { loadUsers(); });
+
+  const handleSearch = () => loadUsers(query);
 
   const getStatus = (userId: string) => {
     if (friendIds.has(userId)) return "friend";
@@ -76,7 +86,7 @@ const FindUsers = () => {
 
       <div className="px-4 pt-4 space-y-1">
         {searching && <p className="text-sm text-muted-foreground text-center py-8">Searching...</p>}
-        {!searching && results.length === 0 && query && (
+        {!searching && results.length === 0 && loaded && (
           <p className="text-sm text-muted-foreground text-center py-8">No users found</p>
         )}
         {results.map((u) => {
