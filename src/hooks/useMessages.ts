@@ -46,6 +46,8 @@ export function useMessages(recipientId: string | undefined) {
   // Load existing messages
   useEffect(() => {
     if (!user || !recipientId) return;
+    const conversationId = [user.id, recipientId].sort().join("_");
+    console.log("Conversation ID:", conversationId);
     const load = async () => {
       setLoading(true);
       const { data } = await supabase
@@ -55,7 +57,9 @@ export function useMessages(recipientId: string | undefined) {
           `and(sender_id.eq.${user.id},receiver_id.eq.${recipientId}),and(sender_id.eq.${recipientId},receiver_id.eq.${user.id})`
         )
         .order("created_at", { ascending: true });
-      setMessages((data || []).map(mapRow));
+      const mapped = (data || []).map(mapRow);
+      console.log("Messages count:", mapped.length);
+      setMessages(mapped);
       setLoading(false);
       scrollToBottom();
     };
