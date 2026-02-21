@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, Search, UserPlus, Check, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -42,8 +42,7 @@ const FindUsers = () => {
     setLoaded(true);
   };
 
-  // Load all users on mount
-  useState(() => { loadUsers(); });
+  useEffect(() => { loadUsers(); }, [user]);
 
   const handleSearch = () => loadUsers(query);
 
