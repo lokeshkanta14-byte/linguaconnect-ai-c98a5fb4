@@ -118,32 +118,35 @@ export function useMessages(recipientId: string | undefined) {
   const sendMessage = useCallback(
     async (text: string) => {
       if (!user || !recipientId) return;
-      await supabase.from("messages").insert({
+
+      // Insert message immediately
+      const { data: inserted } = await supabase.from("messages").insert({
         sender_id: user.id,
         receiver_id: recipientId,
         message: text,
-      });
-      // Translation (fire-and-forget)
+      }).select("id").single();
+
+      if (!inserted) return;
+
+      // Fetch receiver's preferred language and translate (fire-and-forget)
       try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("preferred_language")
+          .eq("user_id", recipientId)
+          .single();
+
+        const targetLang = profile?.preferred_language || "English";
+
         const { data } = await supabase.functions.invoke("translate", {
-          body: { text, targetLanguage: "English" },
+          body: { text, targetLanguage: targetLang },
         });
+
         if (data?.translated && data.translated.trim().toLowerCase() !== text.trim().toLowerCase()) {
-          // Find the just-inserted message and update
-          const { data: msgs } = await supabase
+          await supabase
             .from("messages")
-            .select("id")
-            .eq("sender_id", user.id)
-            .eq("receiver_id", recipientId)
-            .eq("message", text)
-            .order("created_at", { ascending: false })
-            .limit(1);
-          if (msgs?.[0]) {
-            await supabase
-              .from("messages")
-              .update({ translated: data.translated, language: "English" })
-              .eq("id", msgs[0].id);
-          }
+            .update({ translated: data.translated, language: targetLang })
+            .eq("id", inserted.id);
         }
       } catch {}
     },
