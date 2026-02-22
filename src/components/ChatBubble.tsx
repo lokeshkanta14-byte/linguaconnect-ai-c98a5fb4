@@ -49,13 +49,19 @@ const ChatBubble = ({ message, time, sent, translated, language, audioUrl, image
         {audioUrl && (
           <audio controls src={audioUrl} className="max-w-full mb-1.5" style={{ height: 36 }} />
         )}
-        {message && <p className="text-sm leading-relaxed">{message}</p>}
-        {translated && (
-          <div className={`mt-1.5 pt-1.5 border-t ${sent ? "border-primary-foreground/20" : "border-border"}`}>
-            <p className="text-xs opacity-80 italic">{translated}</p>
+        {/* Receiver sees translated text as primary; sender sees original */}
+        {message && (
+          <p className="text-sm leading-relaxed">
+            {!sent && translated ? translated : message}
+          </p>
+        )}
+        {/* Receiver sees original as secondary note; sender sees nothing extra */}
+        {!sent && translated && message && (
+          <div className={`mt-1.5 pt-1.5 border-t border-border`}>
+            <p className="text-[11px] opacity-60 italic">{message}</p>
             {language && (
-              <span className={`text-[9px] uppercase font-bold mt-0.5 inline-block ${sent ? "opacity-60" : "text-primary"}`}>
-                Translated to {language}
+              <span className="text-[9px] uppercase font-bold mt-0.5 inline-block text-primary">
+                Translated from original
               </span>
             )}
           </div>
