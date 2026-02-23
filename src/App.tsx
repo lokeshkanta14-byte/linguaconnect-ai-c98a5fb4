@@ -29,7 +29,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <div className="dark max-w-lg mx-auto min-h-screen bg-background relative">
+          <div className="max-w-lg mx-auto min-h-screen bg-background relative">
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
