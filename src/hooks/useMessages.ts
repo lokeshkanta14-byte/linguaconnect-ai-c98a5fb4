@@ -13,6 +13,7 @@ export interface Message {
   imageUrl?: string;
   deleted?: boolean;
   deletedForEveryone?: boolean;
+  status?: string;
 }
 
 export function useMessages(recipientId: string | undefined) {
@@ -39,6 +40,7 @@ export function useMessages(recipientId: string | undefined) {
       audioUrl: row.audio_url ?? undefined,
       imageUrl: row.image_url ?? undefined,
       deletedForEveryone: row.deleted_for_everyone || false,
+      status: row.status || "sent",
     }),
     [user?.id]
   );
@@ -62,6 +64,17 @@ export function useMessages(recipientId: string | undefined) {
       setMessages(mapped);
       setLoading(false);
       scrollToBottom();
+
+      // Mark received messages as delivered
+      const undelivered = (data || []).filter(
+        (r: any) => r.receiver_id === user.id && r.status === 'sent'
+      );
+      if (undelivered.length > 0) {
+        await supabase
+          .from("messages")
+          .update({ status: 'delivered' })
+          .in("id", undelivered.map((r: any) => r.id));
+      }
     };
     load();
   }, [user, recipientId, mapRow, scrollToBottom]);
@@ -91,6 +104,10 @@ export function useMessages(recipientId: string | undefined) {
               return [...prev, mapRow(row)];
             });
             scrollToBottom();
+            // Mark as delivered if we're the receiver
+            if (row.receiver_id === user.id && row.status === 'sent') {
+              supabase.from("messages").update({ status: 'delivered' }).eq("id", row.id);
+            }
           }
         }
       )

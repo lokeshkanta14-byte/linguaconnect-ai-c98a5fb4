@@ -1,4 +1,4 @@
-import { Ban } from "lucide-react";
+import { Ban, Check, CheckCheck } from "lucide-react";
 
 interface ChatBubbleProps {
   message: string;
@@ -10,10 +10,11 @@ interface ChatBubbleProps {
   imageUrl?: string;
   deleted?: boolean;
   deletedForEveryone?: boolean;
+  status?: string;
   onLongPress?: () => void;
 }
 
-const ChatBubble = ({ message, time, sent, translated, language, audioUrl, imageUrl, deleted, deletedForEveryone, onLongPress }: ChatBubbleProps) => {
+const ChatBubble = ({ message, time, sent, translated, language, audioUrl, imageUrl, deleted, deletedForEveryone, status, onLongPress }: ChatBubbleProps) => {
   if (deleted || deletedForEveryone) {
     return (
       <div className={`flex ${sent ? "justify-end" : "justify-start"} mb-2.5 animate-fade-in`}>
@@ -54,9 +55,16 @@ const ChatBubble = ({ message, time, sent, translated, language, audioUrl, image
             {!sent && translated ? translated : message}
           </p>
         )}
-        <p className={`text-[10px] mt-1 text-right ${sent ? "opacity-60" : "text-muted-foreground"}`}>
-          {time}
-        </p>
+        <div className={`flex items-center justify-end gap-1 mt-1`}>
+          <span className={`text-[10px] ${sent ? "opacity-60" : "text-muted-foreground"}`}>{time}</span>
+          {sent && (
+            status === 'delivered' ? (
+              <CheckCheck className="w-3.5 h-3.5 text-primary" />
+            ) : (
+              <Check className="w-3.5 h-3.5 opacity-60" />
+            )
+          )}
+        </div>
       </div>
     </div>
   );
