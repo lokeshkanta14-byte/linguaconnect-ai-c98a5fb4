@@ -105,6 +105,7 @@ export type Database = {
           message: string | null
           receiver_id: string
           sender_id: string
+          status: string
           translated: string | null
         }
         Insert: {
@@ -117,6 +118,7 @@ export type Database = {
           message?: string | null
           receiver_id: string
           sender_id: string
+          status?: string
           translated?: string | null
         }
         Update: {
@@ -129,6 +131,7 @@ export type Database = {
           message?: string | null
           receiver_id?: string
           sender_id?: string
+          status?: string
           translated?: string | null
         }
         Relationships: []
