@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
-import { MessageCircle, Users, Music, Shield, Settings } from "lucide-react";
+import { MessageCircle, Users, Sparkles, Music, Shield, Settings } from "lucide-react";
 
 const navItems = [
   { path: "/", icon: MessageCircle, label: "Chats" },
   { path: "/contacts", icon: Users, label: "Contacts" },
+  { path: "/ai-chat", icon: Sparkles, label: "AI" },
   { path: "/music", icon: Music, label: "Music" },
   { path: "/sos", icon: Shield, label: "SOS" },
   { path: "/settings", icon: Settings, label: "Settings" },
@@ -11,7 +12,7 @@ const navItems = [
 
 const BottomNav = () => {
   const location = useLocation();
-  if (location.pathname === "/login" || location.pathname.startsWith("/chat/")) return null;
+  if (location.pathname === "/login" || location.pathname.startsWith("/chat/") || location.pathname === "/ai-chat") return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 glass safe-bottom border-t border-border/50">
