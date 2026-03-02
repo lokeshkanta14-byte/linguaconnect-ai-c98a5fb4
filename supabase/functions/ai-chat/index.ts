@@ -13,6 +13,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
+    // Use gemini-3-flash-preview which supports multimodal (text + images)
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -25,7 +26,7 @@ serve(async (req) => {
           {
             role: "system",
             content:
-              "You are a helpful multilingual chat assistant. Always reply in the user's language. Keep answers short, clear, and friendly like a messaging app. Maximum 3 sentences.",
+              "You are a helpful multilingual chat assistant. Always reply in the user's language. Keep answers short, clear, and friendly like a messaging app. Maximum 3 sentences. When images are shared, describe what you see, read any text in the image, and answer questions about it.",
           },
           ...messages.slice(-10),
         ],
