@@ -18,6 +18,7 @@ import VoiceCall from "./pages/VoiceCall";
 import VideoCall from "./pages/VideoCall";
 import IncomingCall from "./pages/IncomingCall";
 import FindUsers from "./pages/FindUsers";
+import AIChat from "./pages/AIChat";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/video-call/:id" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
               <Route path="/incoming-call/:id/:type" element={<ProtectedRoute><IncomingCall /></ProtectedRoute>} />
               <Route path="/find-users" element={<ProtectedRoute><FindUsers /></ProtectedRoute>} />
+              <Route path="/ai-chat" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <BottomNav />
