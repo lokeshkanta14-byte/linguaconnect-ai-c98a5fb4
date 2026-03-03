@@ -64,6 +64,8 @@ CORE BEHAVIOR:
     });
 
     if (!response.ok) {
+      const t = await response.text();
+      console.error("AI gateway error:", response.status, t);
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded, please try again later." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -74,9 +76,18 @@ CORE BEHAVIOR:
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
+      if (response.status === 400) {
+        let userMsg = "The AI could not process your request. ";
+        if (t.includes("Unsupported MIME type")) {
+          userMsg += "The file type you sent is not supported. Please send only images (JPEG, PNG, GIF, WebP).";
+        } else {
+          userMsg += "Please try again with a simpler message.";
+        }
+        return new Response(JSON.stringify({ error: userMsg }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ error: "AI service error, please try again." }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
