@@ -1,11 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { MessageCircle, Users, Sparkles, Music, Shield, Settings } from "lucide-react";
+import { MessageCircle, Users, Sparkles, Globe, Shield, Settings } from "lucide-react";
 
 const navItems = [
   { path: "/", icon: MessageCircle, label: "Chats" },
   { path: "/contacts", icon: Users, label: "Contacts" },
   { path: "/ai-chat", icon: Sparkles, label: "AI" },
-  { path: "/music", icon: Music, label: "Music" },
+  { path: "/random", icon: Globe, label: "Random" },
   { path: "/sos", icon: Shield, label: "SOS" },
   { path: "/settings", icon: Settings, label: "Settings" },
 ];
