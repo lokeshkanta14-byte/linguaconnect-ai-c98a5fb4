@@ -17,6 +17,7 @@ const Chat = () => {
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [contactName, setContactName] = useState("...");
   const [isFriend, setIsFriend] = useState<boolean | null>(null);
+  const isRandomChat = recipientId === "00000000-0000-0000-0000-000000000000";
 
   const {
     messages,
@@ -33,6 +34,10 @@ const Chat = () => {
   useEffect(() => {
     if (!recipientId || !user) return;
     const checkFriend = async () => {
+      if (isRandomChat) {
+        setIsFriend(true);
+        return;
+      }
       const { data } = await supabase.rpc("are_friends", { user_a: user.id, user_b: recipientId });
       setIsFriend(!!data);
     };
