@@ -75,6 +75,17 @@ export function useMessages(recipientId: string | undefined) {
           .update({ status: 'delivered' })
           .in("id", undelivered.map((r: any) => r.id));
       }
+
+      // Mark received messages as seen (user has opened the chat)
+      const unseen = (data || []).filter(
+        (r: any) => r.receiver_id === user.id && (r.status === 'sent' || r.status === 'delivered')
+      );
+      if (unseen.length > 0) {
+        await supabase
+          .from("messages")
+          .update({ status: 'seen' })
+          .in("id", unseen.map((r: any) => r.id));
+      }
     };
     load();
   }, [user, recipientId, mapRow, scrollToBottom]);
@@ -105,8 +116,8 @@ export function useMessages(recipientId: string | undefined) {
             });
             scrollToBottom();
             // Mark as delivered if we're the receiver
-            if (row.receiver_id === user.id && row.status === 'sent') {
-              supabase.from("messages").update({ status: 'delivered' }).eq("id", row.id);
+            if (row.receiver_id === user.id && (row.status === 'sent' || row.status === 'delivered')) {
+              supabase.from("messages").update({ status: 'seen' }).eq("id", row.id);
             }
           }
         }
