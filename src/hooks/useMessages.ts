@@ -75,6 +75,17 @@ export function useMessages(recipientId: string | undefined) {
           .update({ status: 'delivered' })
           .in("id", undelivered.map((r: any) => r.id));
       }
+
+      // Mark received messages as seen (user has opened the chat)
+      const unseen = (data || []).filter(
+        (r: any) => r.receiver_id === user.id && (r.status === 'sent' || r.status === 'delivered')
+      );
+      if (unseen.length > 0) {
+        await supabase
+          .from("messages")
+          .update({ status: 'seen' })
+          .in("id", unseen.map((r: any) => r.id));
+      }
     };
     load();
   }, [user, recipientId, mapRow, scrollToBottom]);
