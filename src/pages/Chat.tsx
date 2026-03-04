@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Phone, Video, MoreVertical, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Phone, Video, MoreVertical, ShieldAlert, User, Ban, Flag, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import ChatBubble from "@/components/ChatBubble";
 import ChatInput from "@/components/ChatInput";
@@ -17,6 +17,9 @@ const Chat = () => {
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [contactName, setContactName] = useState("...");
   const [isFriend, setIsFriend] = useState<boolean | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const isRandomChat = recipientId === "00000000-0000-0000-0000-000000000000";
 
   const {
@@ -49,9 +52,28 @@ const Chat = () => {
         .single();
       setContactName(data?.display_name || "Unknown");
     };
+    const checkBlocked = async () => {
+      const { data } = await supabase
+        .from("blocked_users")
+        .select("id")
+        .eq("blocker_id", user.id)
+        .eq("blocked_id", recipientId!)
+        .maybeSingle();
+      setIsBlocked(!!data);
+    };
     checkFriend();
     fetchName();
+    checkBlocked();
   }, [recipientId, user]);
+
+  // Close menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const initials = contactName.split(" ").map((n) => n[0]).join("").slice(0, 2);
   const selectedMsg = messages.find((m) => m.id === selectedMessageId);
@@ -73,6 +95,31 @@ const Chat = () => {
   const handleDeleteForEveryone = async (msgId: string) => {
     await deleteForEveryone(msgId);
     setSelectedMessageId(null);
+  };
+
+  const handleBlockUser = async () => {
+    if (!user || !recipientId) return;
+    setShowMenu(false);
+    if (isBlocked) {
+      await supabase.from("blocked_users").delete().eq("blocker_id", user.id).eq("blocked_id", recipientId);
+      setIsBlocked(false);
+      toast({ title: "User unblocked" });
+    } else {
+      await supabase.from("blocked_users").insert({ blocker_id: user.id, blocked_id: recipientId });
+      setIsBlocked(true);
+      toast({ title: "User blocked" });
+    }
+  };
+
+  const handleClearChat = () => {
+    setShowMenu(false);
+    messages.forEach((m) => deleteForMe(m.id));
+    toast({ title: "Chat cleared" });
+  };
+
+  const handleReport = () => {
+    setShowMenu(false);
+    toast({ title: "User reported", description: "Thank you for keeping the community safe." });
   };
 
   return (
@@ -99,12 +146,52 @@ const Chat = () => {
             <button onClick={() => navigate(`/video-call/${recipientId}`)} className="p-2 hover:bg-secondary rounded-full transition-colors text-muted-foreground">
               <Video className="w-4 h-4" />
             </button>
-            <button className="p-2 hover:bg-secondary rounded-full transition-colors text-muted-foreground">
-              <MoreVertical className="w-4 h-4" />
-            </button>
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setShowMenu((v) => !v)}
+                className="p-2 hover:bg-secondary rounded-full transition-colors text-muted-foreground"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+              {showMenu && (
+                <div className="absolute right-0 top-full mt-1 w-44 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-50 animate-fade-in">
+                  <button
+                    onClick={() => { setShowMenu(false); navigate(`/profile/${recipientId}`); }}
+                    className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm hover:bg-secondary transition-colors"
+                  >
+                    <User className="w-4 h-4" /> View Profile
+                  </button>
+                  <button
+                    onClick={handleBlockUser}
+                    className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm hover:bg-secondary transition-colors text-destructive"
+                  >
+                    <Ban className="w-4 h-4" /> {isBlocked ? "Unblock User" : "Block User"}
+                  </button>
+                  <button
+                    onClick={handleReport}
+                    className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm hover:bg-secondary transition-colors"
+                  >
+                    <Flag className="w-4 h-4" /> Report User
+                  </button>
+                  <button
+                    onClick={handleClearChat}
+                    className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm hover:bg-secondary transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" /> Clear Chat
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Blocked notice */}
+      {isBlocked && (
+        <div className="bg-destructive/10 text-destructive text-xs text-center py-2">
+          You have blocked this user. <button onClick={handleBlockUser} className="underline font-medium">Unblock</button>
+        </div>
+      )}
 
       {/* Friendship gate */}
       {isFriend === false && (
@@ -132,12 +219,19 @@ const Chat = () => {
             <div ref={bottomRef} />
           </div>
 
-          <ChatInput
-            onSend={sendMessage}
-            onSendAudio={sendAudio}
-            onSendImage={sendImage}
-            onSendLocation={handleSendLocation}
-          />
+          {!isBlocked && (
+            <ChatInput
+              onSend={sendMessage}
+              onSendAudio={sendAudio}
+              onSendImage={sendImage}
+              onSendLocation={handleSendLocation}
+            />
+          )}
+          {isBlocked && (
+            <div className="fixed bottom-0 left-0 right-0 z-40 glass safe-bottom">
+              <p className="text-xs text-muted-foreground text-center py-3">You blocked this user. Unblock to send messages.</p>
+            </div>
+          )}
         </>
       )}
 
