@@ -116,8 +116,8 @@ export function useMessages(recipientId: string | undefined) {
             });
             scrollToBottom();
             // Mark as delivered if we're the receiver
-            if (row.receiver_id === user.id && row.status === 'sent') {
-              supabase.from("messages").update({ status: 'delivered' }).eq("id", row.id);
+            if (row.receiver_id === user.id && (row.status === 'sent' || row.status === 'delivered')) {
+              supabase.from("messages").update({ status: 'seen' }).eq("id", row.id);
             }
           }
         }
