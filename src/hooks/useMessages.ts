@@ -65,15 +65,15 @@ export function useMessages(recipientId: string | undefined) {
       setLoading(false);
       scrollToBottom();
 
-      // Mark received messages as seen (user has opened the chat)
-      const unseen = (data || []).filter(
-        (r: any) => r.receiver_id === user.id && r.status !== 'seen'
+      // Mark received messages as delivered
+      const undelivered = (data || []).filter(
+        (r: any) => r.receiver_id === user.id && r.status === 'sent'
       );
-      if (unseen.length > 0) {
+      if (undelivered.length > 0) {
         await supabase
           .from("messages")
-          .update({ status: 'seen' })
-          .in("id", unseen.map((r: any) => r.id));
+          .update({ status: 'delivered' })
+          .in("id", undelivered.map((r: any) => r.id));
       }
     };
     load();
@@ -104,9 +104,9 @@ export function useMessages(recipientId: string | undefined) {
               return [...prev, mapRow(row)];
             });
             scrollToBottom();
-            // Mark as seen since user has the chat open
-            if (row.receiver_id === user.id && row.status !== 'seen') {
-              supabase.from("messages").update({ status: 'seen' }).eq("id", row.id);
+            // Mark as delivered if we're the receiver
+            if (row.receiver_id === user.id && row.status === 'sent') {
+              supabase.from("messages").update({ status: 'delivered' }).eq("id", row.id);
             }
           }
         }

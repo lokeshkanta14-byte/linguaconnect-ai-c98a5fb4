@@ -58,10 +58,8 @@ const ChatBubble = ({ message, time, sent, translated, language, audioUrl, image
         <div className={`flex items-center justify-end gap-1 mt-1`}>
           <span className={`text-[10px] ${sent ? "opacity-60" : "text-muted-foreground"}`}>{time}</span>
           {sent && (
-            status === 'seen' ? (
+            status === 'delivered' ? (
               <CheckCheck className="w-3.5 h-3.5 text-primary" />
-            ) : status === 'delivered' ? (
-              <CheckCheck className="w-3.5 h-3.5 text-muted-foreground" />
             ) : (
               <Check className="w-3.5 h-3.5 opacity-60" />
             )
