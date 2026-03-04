@@ -20,6 +20,7 @@ import VideoCall from "./pages/VideoCall";
 import IncomingCall from "./pages/IncomingCall";
 import FindUsers from "./pages/FindUsers";
 import AIChat from "./pages/AIChat";
+import Status from "./pages/Status";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
