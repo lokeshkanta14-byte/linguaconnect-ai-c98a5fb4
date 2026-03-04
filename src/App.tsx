@@ -48,6 +48,7 @@ const App = () => (
               <Route path="/incoming-call/:id/:type" element={<ProtectedRoute><IncomingCall /></ProtectedRoute>} />
               <Route path="/find-users" element={<ProtectedRoute><FindUsers /></ProtectedRoute>} />
               <Route path="/ai-chat" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
+              <Route path="/status" element={<ProtectedRoute><Status /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <BottomNav />

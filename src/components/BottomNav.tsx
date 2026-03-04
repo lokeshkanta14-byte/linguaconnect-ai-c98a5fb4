@@ -1,8 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
-import { MessageCircle, Users, Sparkles, Globe, Shield, Settings } from "lucide-react";
+import { MessageCircle, Users, Sparkles, Globe, Shield, Settings, CircleDot } from "lucide-react";
 
 const navItems = [
   { path: "/", icon: MessageCircle, label: "Chats" },
+  { path: "/status", icon: CircleDot, label: "Status" },
   { path: "/contacts", icon: Users, label: "Contacts" },
   { path: "/ai-chat", icon: Sparkles, label: "AI" },
   { path: "/random", icon: Globe, label: "Random" },
