@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocked_users: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       emergency_contacts: {
         Row: {
           created_at: string
@@ -171,6 +192,39 @@ export type Database = {
           phone?: string | null
           preferred_language?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_statuses: {
+        Row: {
+          background_color: string | null
+          content_type: string
+          created_at: string
+          expires_at: string
+          id: string
+          image_url: string | null
+          text_content: string | null
+          user_id: string
+        }
+        Insert: {
+          background_color?: string | null
+          content_type?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          image_url?: string | null
+          text_content?: string | null
+          user_id: string
+        }
+        Update: {
+          background_color?: string | null
+          content_type?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          image_url?: string | null
+          text_content?: string | null
           user_id?: string
         }
         Relationships: []
