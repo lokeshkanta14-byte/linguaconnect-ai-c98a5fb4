@@ -369,6 +369,7 @@ const AIChat = () => {
 
       {/* Input */}
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFilePick} />
+      <input ref={docRef} type="file" accept={DOC_ACCEPT} className="hidden" onChange={handleDocPick} />
       <div className="fixed bottom-0 left-0 right-0 z-40 glass safe-bottom">
         <div className="flex items-end gap-2 px-3 py-2 max-w-3xl mx-auto">
           <button
@@ -382,6 +383,12 @@ const AIChat = () => {
             className="p-2.5 text-muted-foreground hover:text-primary transition-colors rounded-full hover:bg-primary/10"
           >
             <Image className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => docRef.current?.click()}
+            className="p-2.5 text-muted-foreground hover:text-primary transition-colors rounded-full hover:bg-primary/10"
+          >
+            <Paperclip className="w-5 h-5" />
           </button>
           <div className="flex-1 flex items-end bg-card rounded-2xl px-3 py-1.5 border border-border">
             <input
