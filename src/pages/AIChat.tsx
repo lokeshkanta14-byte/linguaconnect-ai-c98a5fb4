@@ -342,16 +342,25 @@ const AIChat = () => {
         <div ref={bottomRef} />
       </div>
 
-      {/* Image Preview */}
-      {imagePreview && (
+      {/* Attachment Preview */}
+      {(imagePreview || docAttachment) && (
         <div className="fixed bottom-14 left-0 right-0 z-40 px-3 py-2">
           <div className="max-w-3xl mx-auto flex items-start gap-2 bg-card border border-border rounded-xl p-2">
-            <img src={imagePreview} alt="Preview" className="w-16 h-16 rounded-lg object-cover" />
+            {imagePreview && (
+              <img src={imagePreview} alt="Preview" className="w-16 h-16 rounded-lg object-cover" />
+            )}
+            {docAttachment && !imagePreview && (
+              <div className="w-16 h-16 rounded-lg bg-secondary flex items-center justify-center">
+                <FileText className="w-6 h-6 text-primary" />
+              </div>
+            )}
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-muted-foreground">Image attached</p>
+              <p className="text-xs text-muted-foreground truncate">
+                {docAttachment ? docAttachment.name : "Image attached"}
+              </p>
               <p className="text-[10px] text-muted-foreground">Add a message or send directly</p>
             </div>
-            <button onClick={() => setImagePreview(null)} className="p-1 hover:bg-secondary rounded-full">
+            <button onClick={() => { setImagePreview(null); setDocAttachment(null); }} className="p-1 hover:bg-secondary rounded-full">
               <X className="w-4 h-4 text-muted-foreground" />
             </button>
           </div>
