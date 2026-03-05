@@ -5,6 +5,31 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function hasImageContent(messages: any[]): boolean {
+  const last = messages[messages.length - 1];
+  if (!last || !Array.isArray(last.content)) return false;
+  return last.content.some((p: any) => p.type === "image_url");
+}
+
+function isImageEditRequest(messages: any[]): boolean {
+  if (!hasImageContent(messages)) return false;
+  const last = messages[messages.length - 1];
+  const textParts = Array.isArray(last.content)
+    ? last.content.filter((p: any) => p.type === "text").map((p: any) => p.text).join(" ")
+    : String(last.content);
+  const editKeywords = [
+    "edit", "change", "remove", "replace", "enhance", "adjust", "transform",
+    "style", "cartoon", "cinematic", "painting", "upscale", "crop", "resize",
+    "rotate", "brightness", "contrast", "sharpen", "blur", "filter", "background",
+    "color", "face", "retouch", "fix", "improve", "make it", "turn it", "convert",
+    "add", "put", "swap", "modify", "artistic", "vintage", "retro", "hdr",
+    "black and white", "b&w", "sepia", "saturate", "desaturate", "lighten", "darken",
+    "generate", "create", "draw", "design", "render"
+  ];
+  const lower = textParts.toLowerCase();
+  return editKeywords.some((kw) => lower.includes(kw));
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -13,7 +38,56 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Use gemini-3-flash-preview which supports multimodal (text + images)
+    const useImageModel = isImageEditRequest(messages);
+
+    if (useImageModel) {
+      // Use gemini-2.5-flash-image for image editing (non-streaming)
+      const lastMsg = messages[messages.length - 1];
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-image",
+          messages: [
+            {
+              role: "system",
+              content: `You are an advanced AI photo editing assistant. Apply the user's requested edits to the provided image. Maintain high quality, realistic lighting, colors, and proportions. If instructions are unclear, describe what you see and ask for clarification.`,
+            },
+            { role: "user", content: lastMsg.content },
+          ],
+          modalities: ["image", "text"],
+        }),
+      });
+
+      if (!response.ok) {
+        const t = await response.text();
+        console.error("Image model error:", response.status, t);
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: "Rate limit exceeded, please try again later." }), {
+            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (response.status === 402) {
+          return new Response(JSON.stringify({ error: "Payment required." }), {
+            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify({ error: "Image editing failed, please try again." }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const data = await response.json();
+      // Return the full response including images array
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Standard text/multimodal chat with streaming
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
