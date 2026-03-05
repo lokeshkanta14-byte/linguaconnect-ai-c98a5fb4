@@ -296,7 +296,7 @@ const AIChat = () => {
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 py-20">
             <Sparkles className="w-10 h-10 opacity-30" />
             <p className="text-sm font-medium">Ask me anything in any language</p>
-            <p className="text-xs">Send text or images — I can analyze both</p>
+            <p className="text-xs">Send text, images, or documents — I can analyze them all</p>
           </div>
         )}
         {messages.map((msg, i) => {
