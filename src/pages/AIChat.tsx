@@ -401,7 +401,7 @@ const AIChat = () => {
           </div>
           <button
             onClick={send}
-            disabled={(!input.trim() && !imagePreview) || isLoading}
+            disabled={(!input.trim() && !imagePreview && !docAttachment) || isLoading}
             className="p-2.5 bg-primary text-primary-foreground rounded-full hover:opacity-90 transition-opacity disabled:opacity-40"
           >
             <Send className="w-5 h-5" />
