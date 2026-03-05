@@ -111,6 +111,35 @@ const AIChat = () => {
     e.target.value = "";
   };
 
+  const handleDocPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_DOC_SIZE) {
+      toast({ title: "File too large (max 10MB)", variant: "destructive" });
+      e.target.value = "";
+      return;
+    }
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    try {
+      if (TEXT_EXTENSIONS.includes(ext)) {
+        const text = await readFileAsText(file);
+        setDocAttachment({ name: file.name, content: text.slice(0, 50000) });
+      } else {
+        // For binary docs (PDF, DOCX, etc.), read as base64 for image_url approach
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === "string") {
+            setDocAttachment({ name: file.name, content: reader.result });
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch {
+      toast({ title: "Could not read file", variant: "destructive" });
+    }
+    e.target.value = "";
+  };
+
   const send = async () => {
     const text = input.trim();
     if ((!text && !imagePreview) || isLoading) return;
