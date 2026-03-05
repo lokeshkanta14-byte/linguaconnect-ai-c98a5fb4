@@ -343,8 +343,8 @@ const AIChat = () => {
                     <span className="text-xs font-medium truncate">{msg.doc.name}</span>
                   </div>
                 )}
-                {image && !msg.doc && (
-                  <img src={image} alt="Shared" className="rounded-lg mb-2 max-h-48 w-auto object-cover" />
+                {image && (
+                  <img src={image} alt={msg.role === "assistant" ? "AI edited image" : "Shared"} className="rounded-lg mb-2 max-h-64 w-auto object-cover cursor-pointer" onClick={() => image && window.open(image, '_blank')} />
                 )}
                 {text && <p className="text-sm whitespace-pre-wrap leading-relaxed">{text}</p>}
                 <p className={`text-[10px] mt-1 text-right ${msg.role === "user" ? "opacity-60" : "text-muted-foreground"}`}>
