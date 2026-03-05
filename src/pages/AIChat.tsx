@@ -212,35 +212,61 @@ const AIChat = () => {
         body: JSON.stringify({ messages: allMessages }),
       });
 
-      if (!resp.ok || !resp.body) {
+      if (!resp.ok) {
         const err = await resp.json().catch(() => ({}));
         toast({ title: err.error || "Failed to get response", variant: "destructive" });
         setIsLoading(false);
         return;
       }
 
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
+      const contentType = resp.headers.get("content-type") || "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+      if (contentType.includes("application/json")) {
+        // Non-streaming response (image editing)
+        const data = await resp.json();
+        const choice = data.choices?.[0]?.message;
+        const textContent = choice?.content || "";
+        const images = choice?.images as Array<{ type: string; image_url: { url: string } }> | undefined;
+        
+        if (images && images.length > 0) {
+          const imgUrl = images[0].image_url.url;
+          const parts: ContentPart[] = [];
+          if (textContent) parts.push({ type: "text", text: textContent });
+          parts.push({ type: "image_url", image_url: { url: imgUrl } });
+          setMessages((prev) => [...prev, { role: "assistant", content: parts }]);
+        } else if (textContent) {
+          upsert(textContent);
+        }
+      } else {
+        // Streaming response (text chat)
+        if (!resp.body) {
+          toast({ title: "Failed to get response", variant: "destructive" });
+          setIsLoading(false);
+          return;
+        }
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
 
-        let idx: number;
-        while ((idx = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, idx);
-          buffer = buffer.slice(idx + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line.startsWith("data: ")) continue;
-          const json = line.slice(6).trim();
-          if (json === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(json);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) upsert(content);
-          } catch {}
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          let idx: number;
+          while ((idx = buffer.indexOf("\n")) !== -1) {
+            let line = buffer.slice(0, idx);
+            buffer = buffer.slice(idx + 1);
+            if (line.endsWith("\r")) line = line.slice(0, -1);
+            if (!line.startsWith("data: ")) continue;
+            const json = line.slice(6).trim();
+            if (json === "[DONE]") break;
+            try {
+              const parsed = JSON.parse(json);
+              const content = parsed.choices?.[0]?.delta?.content;
+              if (content) upsert(content);
+            } catch {}
+          }
         }
       }
     } catch (e) {
