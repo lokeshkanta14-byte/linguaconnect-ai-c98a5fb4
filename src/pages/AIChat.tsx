@@ -311,7 +311,13 @@ const AIChat = () => {
                     : "bg-card border border-border rounded-bl-md"
                 }`}
               >
-                {image && (
+                {msg.doc && (
+                  <div className="flex items-center gap-2 mb-2 p-2 rounded-lg bg-secondary/50">
+                    <FileText className="w-5 h-5 text-primary shrink-0" />
+                    <span className="text-xs font-medium truncate">{msg.doc.name}</span>
+                  </div>
+                )}
+                {image && !msg.doc && (
                   <img src={image} alt="Shared" className="rounded-lg mb-2 max-h-48 w-auto object-cover" />
                 )}
                 {text && <p className="text-sm whitespace-pre-wrap leading-relaxed">{text}</p>}
