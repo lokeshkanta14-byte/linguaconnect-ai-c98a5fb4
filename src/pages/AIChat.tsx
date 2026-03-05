@@ -8,9 +8,15 @@ type ContentPart =
   | { type: "text"; text: string }
   | { type: "image_url"; image_url: { url: string } };
 
+type DocAttachment = {
+  name: string;
+  content: string; // extracted text content
+};
+
 type Msg = {
   role: "user" | "assistant";
   content: string | ContentPart[];
+  doc?: DocAttachment; // local-only, for UI display
 };
 
 const AI_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
