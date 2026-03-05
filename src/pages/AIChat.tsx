@@ -36,6 +36,18 @@ const getMsgImage = (msg: Msg): string | null => {
   return null;
 };
 
+const TEXT_EXTENSIONS = ["txt", "csv", "json", "md", "xml", "yaml", "yml", "toml", "log"];
+const DOC_ACCEPT = ".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.json,.ppt,.pptx,.md,.xml";
+const MAX_DOC_SIZE = 10 * 1024 * 1024; // 10MB
+
+const readFileAsText = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+
 const AIChat = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Msg[]>([]);
