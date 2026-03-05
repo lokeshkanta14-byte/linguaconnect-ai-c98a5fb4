@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Sparkles, Camera, Image, X } from "lucide-react";
+import { ArrowLeft, Send, Sparkles, Camera, Image, X, FileText, Paperclip } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
 
@@ -8,9 +8,15 @@ type ContentPart =
   | { type: "text"; text: string }
   | { type: "image_url"; image_url: { url: string } };
 
+type DocAttachment = {
+  name: string;
+  content: string; // extracted text content
+};
+
 type Msg = {
   role: "user" | "assistant";
   content: string | ContentPart[];
+  doc?: DocAttachment; // local-only, for UI display
 };
 
 const AI_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
@@ -30,15 +36,29 @@ const getMsgImage = (msg: Msg): string | null => {
   return null;
 };
 
+const TEXT_EXTENSIONS = ["txt", "csv", "json", "md", "xml", "yaml", "yml", "toml", "log"];
+const DOC_ACCEPT = ".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.json,.ppt,.pptx,.md,.xml";
+const MAX_DOC_SIZE = 10 * 1024 * 1024; // 10MB
+
+const readFileAsText = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+
 const AIChat = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [docAttachment, setDocAttachment] = useState<DocAttachment | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const docRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -91,12 +111,59 @@ const AIChat = () => {
     e.target.value = "";
   };
 
+  const handleDocPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_DOC_SIZE) {
+      toast({ title: "File too large (max 10MB)", variant: "destructive" });
+      e.target.value = "";
+      return;
+    }
+    const ext = file.name.split(".").pop()?.toLowerCase() || "";
+    try {
+      if (TEXT_EXTENSIONS.includes(ext)) {
+        const text = await readFileAsText(file);
+        setDocAttachment({ name: file.name, content: text.slice(0, 50000) });
+      } else {
+        // For binary docs (PDF, DOCX, etc.), read as base64 for image_url approach
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === "string") {
+            setDocAttachment({ name: file.name, content: reader.result });
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch {
+      toast({ title: "Could not read file", variant: "destructive" });
+    }
+    e.target.value = "";
+  };
+
   const send = async () => {
     const text = input.trim();
-    if ((!text && !imagePreview) || isLoading) return;
+    if ((!text && !imagePreview && !docAttachment) || isLoading) return;
 
     let userContent: string | ContentPart[];
-    if (imagePreview) {
+    let msgDoc: DocAttachment | undefined;
+
+    if (docAttachment) {
+      const parts: ContentPart[] = [];
+      const isBase64 = docAttachment.content.startsWith("data:");
+      if (isBase64) {
+        // Binary doc — send as image_url (Gemini handles PDFs this way)
+        parts.push({ type: "text", text: text || `Analyze this document: ${docAttachment.name}` });
+        parts.push({ type: "image_url", image_url: { url: docAttachment.content } });
+      } else {
+        // Text-based doc — embed content as text
+        const docPrompt = text
+          ? `${text}\n\n--- Document: ${docAttachment.name} ---\n${docAttachment.content}`
+          : `Analyze this document: ${docAttachment.name}\n\n${docAttachment.content}`;
+        parts.push({ type: "text", text: docPrompt });
+      }
+      userContent = parts;
+      msgDoc = docAttachment;
+    } else if (imagePreview) {
       const parts: ContentPart[] = [];
       if (text) parts.push({ type: "text", text });
       else parts.push({ type: "text", text: "What's in this image?" });
@@ -106,9 +173,10 @@ const AIChat = () => {
       userContent = text;
     }
 
-    const userMsg: Msg = { role: "user", content: userContent };
+    const userMsg: Msg = { role: "user", content: userContent, doc: msgDoc };
     setInput("");
     setImagePreview(null);
+    setDocAttachment(null);
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
 
@@ -228,7 +296,7 @@ const AIChat = () => {
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 py-20">
             <Sparkles className="w-10 h-10 opacity-30" />
             <p className="text-sm font-medium">Ask me anything in any language</p>
-            <p className="text-xs">Send text or images — I can analyze both</p>
+            <p className="text-xs">Send text, images, or documents — I can analyze them all</p>
           </div>
         )}
         {messages.map((msg, i) => {
@@ -243,7 +311,13 @@ const AIChat = () => {
                     : "bg-card border border-border rounded-bl-md"
                 }`}
               >
-                {image && (
+                {msg.doc && (
+                  <div className="flex items-center gap-2 mb-2 p-2 rounded-lg bg-secondary/50">
+                    <FileText className="w-5 h-5 text-primary shrink-0" />
+                    <span className="text-xs font-medium truncate">{msg.doc.name}</span>
+                  </div>
+                )}
+                {image && !msg.doc && (
                   <img src={image} alt="Shared" className="rounded-lg mb-2 max-h-48 w-auto object-cover" />
                 )}
                 {text && <p className="text-sm whitespace-pre-wrap leading-relaxed">{text}</p>}
@@ -268,16 +342,25 @@ const AIChat = () => {
         <div ref={bottomRef} />
       </div>
 
-      {/* Image Preview */}
-      {imagePreview && (
+      {/* Attachment Preview */}
+      {(imagePreview || docAttachment) && (
         <div className="fixed bottom-14 left-0 right-0 z-40 px-3 py-2">
           <div className="max-w-3xl mx-auto flex items-start gap-2 bg-card border border-border rounded-xl p-2">
-            <img src={imagePreview} alt="Preview" className="w-16 h-16 rounded-lg object-cover" />
+            {imagePreview && (
+              <img src={imagePreview} alt="Preview" className="w-16 h-16 rounded-lg object-cover" />
+            )}
+            {docAttachment && !imagePreview && (
+              <div className="w-16 h-16 rounded-lg bg-secondary flex items-center justify-center">
+                <FileText className="w-6 h-6 text-primary" />
+              </div>
+            )}
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-muted-foreground">Image attached</p>
+              <p className="text-xs text-muted-foreground truncate">
+                {docAttachment ? docAttachment.name : "Image attached"}
+              </p>
               <p className="text-[10px] text-muted-foreground">Add a message or send directly</p>
             </div>
-            <button onClick={() => setImagePreview(null)} className="p-1 hover:bg-secondary rounded-full">
+            <button onClick={() => { setImagePreview(null); setDocAttachment(null); }} className="p-1 hover:bg-secondary rounded-full">
               <X className="w-4 h-4 text-muted-foreground" />
             </button>
           </div>
@@ -286,6 +369,7 @@ const AIChat = () => {
 
       {/* Input */}
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFilePick} />
+      <input ref={docRef} type="file" accept={DOC_ACCEPT} className="hidden" onChange={handleDocPick} />
       <div className="fixed bottom-0 left-0 right-0 z-40 glass safe-bottom">
         <div className="flex items-end gap-2 px-3 py-2 max-w-3xl mx-auto">
           <button
@@ -300,6 +384,12 @@ const AIChat = () => {
           >
             <Image className="w-5 h-5" />
           </button>
+          <button
+            onClick={() => docRef.current?.click()}
+            className="p-2.5 text-muted-foreground hover:text-primary transition-colors rounded-full hover:bg-primary/10"
+          >
+            <Paperclip className="w-5 h-5" />
+          </button>
           <div className="flex-1 flex items-end bg-card rounded-2xl px-3 py-1.5 border border-border">
             <input
               value={input}
@@ -311,7 +401,7 @@ const AIChat = () => {
           </div>
           <button
             onClick={send}
-            disabled={(!input.trim() && !imagePreview) || isLoading}
+            disabled={(!input.trim() && !imagePreview && !docAttachment) || isLoading}
             className="p-2.5 bg-primary text-primary-foreground rounded-full hover:opacity-90 transition-opacity disabled:opacity-40"
           >
             <Send className="w-5 h-5" />
