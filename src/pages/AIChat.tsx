@@ -142,10 +142,28 @@ const AIChat = () => {
 
   const send = async () => {
     const text = input.trim();
-    if ((!text && !imagePreview) || isLoading) return;
+    if ((!text && !imagePreview && !docAttachment) || isLoading) return;
 
     let userContent: string | ContentPart[];
-    if (imagePreview) {
+    let msgDoc: DocAttachment | undefined;
+
+    if (docAttachment) {
+      const parts: ContentPart[] = [];
+      const isBase64 = docAttachment.content.startsWith("data:");
+      if (isBase64) {
+        // Binary doc — send as image_url (Gemini handles PDFs this way)
+        parts.push({ type: "text", text: text || `Analyze this document: ${docAttachment.name}` });
+        parts.push({ type: "image_url", image_url: { url: docAttachment.content } });
+      } else {
+        // Text-based doc — embed content as text
+        const docPrompt = text
+          ? `${text}\n\n--- Document: ${docAttachment.name} ---\n${docAttachment.content}`
+          : `Analyze this document: ${docAttachment.name}\n\n${docAttachment.content}`;
+        parts.push({ type: "text", text: docPrompt });
+      }
+      userContent = parts;
+      msgDoc = docAttachment;
+    } else if (imagePreview) {
       const parts: ContentPart[] = [];
       if (text) parts.push({ type: "text", text });
       else parts.push({ type: "text", text: "What's in this image?" });
@@ -155,9 +173,10 @@ const AIChat = () => {
       userContent = text;
     }
 
-    const userMsg: Msg = { role: "user", content: userContent };
+    const userMsg: Msg = { role: "user", content: userContent, doc: msgDoc };
     setInput("");
     setImagePreview(null);
+    setDocAttachment(null);
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
 
