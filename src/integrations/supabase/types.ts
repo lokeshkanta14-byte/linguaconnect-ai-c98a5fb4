@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_chat_memory: {
+        Row: {
+          id: string
+          last_topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          last_topic?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          last_topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       blocked_users: {
         Row: {
           blocked_id: string
