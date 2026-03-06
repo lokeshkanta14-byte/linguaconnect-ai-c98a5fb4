@@ -30,6 +30,32 @@ function isImageEditRequest(messages: any[]): boolean {
   return editKeywords.some((kw) => lower.includes(kw));
 }
 
+function isImageGenerationRequest(messages: any[]): boolean {
+  const last = messages[messages.length - 1];
+  if (!last) return false;
+  const textParts = Array.isArray(last.content)
+    ? last.content.filter((p: any) => p.type === "text").map((p: any) => p.text).join(" ")
+    : String(last.content);
+  const lower = textParts.toLowerCase();
+  const genKeywords = [
+    "generate a", "generate an", "generate image", "generate picture", "generate photo",
+    "create a picture", "create an image", "create a photo", "create image",
+    "draw a", "draw an", "draw me", "draw image",
+    "show me a", "show me an", "show me the",
+    "make a picture", "make an image", "make a photo", "make me a",
+    "design a", "design an",
+    "render a", "render an",
+    "paint a", "paint an",
+    "illustrate a", "illustrate an",
+    "picture of", "image of", "photo of",
+    "give me a picture", "give me an image", "give me a photo",
+    "can you draw", "can you generate", "can you create an image", "can you make an image",
+    "i want a picture", "i want an image", "i want a photo",
+    "generate a sunset", "generate a landscape",
+  ];
+  return genKeywords.some((kw) => lower.includes(kw));
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -39,10 +65,22 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const useImageModel = isImageEditRequest(messages);
+    const useImageGeneration = !useImageModel && !hasImageContent(messages) && isImageGenerationRequest(messages);
 
-    if (useImageModel) {
-      // Use gemini-2.5-flash-image for image editing (non-streaming)
+    if (useImageModel || useImageGeneration) {
       const lastMsg = messages[messages.length - 1];
+      const lastText = Array.isArray(lastMsg.content)
+        ? lastMsg.content.filter((p: any) => p.type === "text").map((p: any) => p.text).join(" ")
+        : String(lastMsg.content);
+
+      const systemPrompt = useImageGeneration
+        ? `You are an AI image generation assistant. Generate a high-quality, detailed, realistic image based on the user's description. If the description is short, enhance it with details like lighting, style, setting, and quality to produce a better image. Always generate the image.`
+        : `You are an advanced AI photo editing assistant. Apply the user's requested edits to the provided image. Maintain high quality, realistic lighting, colors, and proportions. If instructions are unclear, describe what you see and ask for clarification.`;
+
+      const userContent = useImageGeneration
+        ? `Generate an image: ${lastText}`
+        : lastMsg.content;
+
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -52,11 +90,8 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "google/gemini-2.5-flash-image",
           messages: [
-            {
-              role: "system",
-              content: `You are an advanced AI photo editing assistant. Apply the user's requested edits to the provided image. Maintain high quality, realistic lighting, colors, and proportions. If instructions are unclear, describe what you see and ask for clarification.`,
-            },
-            { role: "user", content: lastMsg.content },
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userContent },
           ],
           modalities: ["image", "text"],
         }),
