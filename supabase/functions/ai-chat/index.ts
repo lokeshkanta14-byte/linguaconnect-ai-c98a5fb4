@@ -65,8 +65,9 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const useImageModel = isImageEditRequest(messages);
+    const useImageGeneration = !useImageModel && !hasImageContent(messages) && isImageGenerationRequest(messages);
 
-    if (useImageModel) {
+    if (useImageModel || useImageGeneration) {
       // Use gemini-2.5-flash-image for image editing (non-streaming)
       const lastMsg = messages[messages.length - 1];
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
