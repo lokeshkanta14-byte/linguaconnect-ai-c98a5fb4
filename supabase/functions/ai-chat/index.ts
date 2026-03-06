@@ -30,6 +30,32 @@ function isImageEditRequest(messages: any[]): boolean {
   return editKeywords.some((kw) => lower.includes(kw));
 }
 
+function isImageGenerationRequest(messages: any[]): boolean {
+  const last = messages[messages.length - 1];
+  if (!last) return false;
+  const textParts = Array.isArray(last.content)
+    ? last.content.filter((p: any) => p.type === "text").map((p: any) => p.text).join(" ")
+    : String(last.content);
+  const lower = textParts.toLowerCase();
+  const genKeywords = [
+    "generate a", "generate an", "generate image", "generate picture", "generate photo",
+    "create a picture", "create an image", "create a photo", "create image",
+    "draw a", "draw an", "draw me", "draw image",
+    "show me a", "show me an", "show me the",
+    "make a picture", "make an image", "make a photo", "make me a",
+    "design a", "design an",
+    "render a", "render an",
+    "paint a", "paint an",
+    "illustrate a", "illustrate an",
+    "picture of", "image of", "photo of",
+    "give me a picture", "give me an image", "give me a photo",
+    "can you draw", "can you generate", "can you create an image", "can you make an image",
+    "i want a picture", "i want an image", "i want a photo",
+    "generate a sunset", "generate a landscape",
+  ];
+  return genKeywords.some((kw) => lower.includes(kw));
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
