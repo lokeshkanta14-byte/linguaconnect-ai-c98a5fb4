@@ -229,6 +229,13 @@ const AIChat = () => {
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
 
+    // Save topic from user text
+    const userText = typeof userContent === "string" ? userContent : userContent.filter((p): p is {type:"text";text:string} => p.type === "text").map(p => p.text).join(" ");
+    if (userText && userText.length > 2) {
+      // Use first 100 chars as topic summary
+      saveTopic(userText.slice(0, 100));
+    }
+
     let assistantSoFar = "";
 
     const upsert = (chunk: string) => {
