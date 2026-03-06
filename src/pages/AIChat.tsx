@@ -57,15 +57,63 @@ const AIChat = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [docAttachment, setDocAttachment] = useState<DocAttachment | null>(null);
   const [showCamera, setShowCamera] = useState(false);
+  const [lastTopic, setLastTopic] = useState<string | null>(null);
+  const [welcomeShown, setWelcomeShown] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const docRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // Load last topic on mount
+  useEffect(() => {
+    const loadMemory = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("ai_chat_memory" as any)
+        .select("last_topic")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data && (data as any).last_topic) {
+        const topic = (data as any).last_topic as string;
+        setLastTopic(topic);
+        // Show welcome-back message once
+        setMessages([{
+          role: "assistant",
+          content: `Welcome back! 👋 Previously you asked about **${topic}**. Would you like to continue that discussion or start a new topic?`
+        }]);
+        setWelcomeShown(true);
+      }
+    };
+    loadMemory();
+  }, []);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Save topic after each user message
+  const saveTopic = useCallback(async (topic: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    // Upsert
+    const { data: existing } = await supabase
+      .from("ai_chat_memory" as any)
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (existing) {
+      await supabase
+        .from("ai_chat_memory" as any)
+        .update({ last_topic: topic, updated_at: new Date().toISOString() } as any)
+        .eq("user_id", user.id);
+    } else {
+      await supabase
+        .from("ai_chat_memory" as any)
+        .insert({ user_id: user.id, last_topic: topic } as any);
+    }
+  }, []);
 
   const openCamera = useCallback(async () => {
     try {
