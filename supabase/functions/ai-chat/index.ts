@@ -68,8 +68,19 @@ serve(async (req) => {
     const useImageGeneration = !useImageModel && !hasImageContent(messages) && isImageGenerationRequest(messages);
 
     if (useImageModel || useImageGeneration) {
-      // Use gemini-2.5-flash-image for image editing (non-streaming)
       const lastMsg = messages[messages.length - 1];
+      const lastText = Array.isArray(lastMsg.content)
+        ? lastMsg.content.filter((p: any) => p.type === "text").map((p: any) => p.text).join(" ")
+        : String(lastMsg.content);
+
+      const systemPrompt = useImageGeneration
+        ? `You are an AI image generation assistant. Generate a high-quality, detailed, realistic image based on the user's description. If the description is short, enhance it with details like lighting, style, setting, and quality to produce a better image. Always generate the image.`
+        : `You are an advanced AI photo editing assistant. Apply the user's requested edits to the provided image. Maintain high quality, realistic lighting, colors, and proportions. If instructions are unclear, describe what you see and ask for clarification.`;
+
+      const userContent = useImageGeneration
+        ? `Generate an image: ${lastText}`
+        : lastMsg.content;
+
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -79,11 +90,8 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "google/gemini-2.5-flash-image",
           messages: [
-            {
-              role: "system",
-              content: `You are an advanced AI photo editing assistant. Apply the user's requested edits to the provided image. Maintain high quality, realistic lighting, colors, and proportions. If instructions are unclear, describe what you see and ask for clarification.`,
-            },
-            { role: "user", content: lastMsg.content },
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userContent },
           ],
           modalities: ["image", "text"],
         }),
