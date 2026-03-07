@@ -1,4 +1,5 @@
 import { Ban, Check, CheckCheck } from "lucide-react";
+import LocationCard from "./LocationCard";
 
 interface ChatBubbleProps {
   message: string;
