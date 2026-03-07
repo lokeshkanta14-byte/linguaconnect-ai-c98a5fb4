@@ -1,4 +1,5 @@
 import { Ban, Check, CheckCheck } from "lucide-react";
+import LocationCard from "./LocationCard";
 
 interface ChatBubbleProps {
   message: string;
@@ -14,7 +15,14 @@ interface ChatBubbleProps {
   onLongPress?: () => void;
 }
 
+const parseLocation = (msg: string): { lat: number; lng: number } | null => {
+  const match = msg.match(/📍\s*Location:\s*([-\d.]+),\s*([-\d.]+)/);
+  if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
+  return null;
+};
+
 const ChatBubble = ({ message, time, sent, translated, language, audioUrl, imageUrl, deleted, deletedForEveryone, status, onLongPress }: ChatBubbleProps) => {
+  const location = message ? parseLocation(message) : null;
   if (deleted || deletedForEveryone) {
     return (
       <div className={`flex ${sent ? "justify-end" : "justify-start"} mb-2.5 animate-fade-in`}>
@@ -50,11 +58,13 @@ const ChatBubble = ({ message, time, sent, translated, language, audioUrl, image
         {audioUrl && (
           <audio controls src={audioUrl} className="max-w-full mb-1.5" style={{ height: 36 }} />
         )}
-        {message && (
+        {location ? (
+          <LocationCard lat={location.lat} lng={location.lng} sent={sent} />
+        ) : message ? (
           <p className="text-sm leading-relaxed">
             {!sent && translated ? translated : message}
           </p>
-        )}
+        ) : null}
         <div className={`flex items-center justify-end gap-1 mt-1`}>
           <span className={`text-[10px] ${sent ? "opacity-60" : "text-muted-foreground"}`}>{time}</span>
           {sent && (
