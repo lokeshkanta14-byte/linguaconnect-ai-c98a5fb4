@@ -58,11 +58,13 @@ const ChatBubble = ({ message, time, sent, translated, language, audioUrl, image
         {audioUrl && (
           <audio controls src={audioUrl} className="max-w-full mb-1.5" style={{ height: 36 }} />
         )}
-        {message && (
+        {location ? (
+          <LocationCard lat={location.lat} lng={location.lng} sent={sent} />
+        ) : message ? (
           <p className="text-sm leading-relaxed">
             {!sent && translated ? translated : message}
           </p>
-        )}
+        ) : null}
         <div className={`flex items-center justify-end gap-1 mt-1`}>
           <span className={`text-[10px] ${sent ? "opacity-60" : "text-muted-foreground"}`}>{time}</span>
           {sent && (
