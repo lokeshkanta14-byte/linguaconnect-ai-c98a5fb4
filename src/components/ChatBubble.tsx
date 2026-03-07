@@ -15,7 +15,14 @@ interface ChatBubbleProps {
   onLongPress?: () => void;
 }
 
+const parseLocation = (msg: string): { lat: number; lng: number } | null => {
+  const match = msg.match(/📍\s*Location:\s*([-\d.]+),\s*([-\d.]+)/);
+  if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
+  return null;
+};
+
 const ChatBubble = ({ message, time, sent, translated, language, audioUrl, imageUrl, deleted, deletedForEveryone, status, onLongPress }: ChatBubbleProps) => {
+  const location = message ? parseLocation(message) : null;
   if (deleted || deletedForEveryone) {
     return (
       <div className={`flex ${sent ? "justify-end" : "justify-start"} mb-2.5 animate-fade-in`}>
