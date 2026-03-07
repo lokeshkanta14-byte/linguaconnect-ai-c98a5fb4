@@ -1,5 +1,6 @@
 import { Ban, Check, CheckCheck } from "lucide-react";
 import LocationCard from "./LocationCard";
+import SOSAlertCard from "./SOSAlertCard";
 
 interface ChatBubbleProps {
   message: string;
@@ -21,8 +22,23 @@ const parseLocation = (msg: string): { lat: number; lng: number } | null => {
   return null;
 };
 
+const isSOSAlert = (msg: string): boolean => {
+  return msg.includes("🚨 EMERGENCY ALERT");
+};
+
+const parseSOSLocation = (msg: string): string | undefined => {
+  const match = msg.match(/(https:\/\/www\.google\.com\/maps\?q=[^\s]+)/);
+  return match ? match[1] : undefined;
+};
+
 const ChatBubble = ({ message, time, sent, translated, language, audioUrl, imageUrl, deleted, deletedForEveryone, status, onLongPress }: ChatBubbleProps) => {
   const location = message ? parseLocation(message) : null;
+  const sosAlert = message ? isSOSAlert(message) : false;
+
+  if (sosAlert) {
+    return <SOSAlertCard location={parseSOSLocation(message)} time={time} />;
+  }
+
   if (deleted || deletedForEveryone) {
     return (
       <div className={`flex ${sent ? "justify-end" : "justify-start"} mb-2.5 animate-fade-in`}>

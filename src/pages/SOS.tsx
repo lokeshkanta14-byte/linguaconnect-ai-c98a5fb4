@@ -1,8 +1,9 @@
-import { Shield, MapPin, Phone, AlertTriangle, Plus, X, PhoneCall, Navigation } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Shield, MapPin, Phone, Plus, X, PhoneCall, Navigation, Vibrate, CheckCircle2 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import useShakeSOS from "@/hooks/useShakeSOS";
 
 interface EmergencyContact {
   id: string;
@@ -13,12 +14,12 @@ interface EmergencyContact {
 
 const SOS = () => {
   const { user } = useAuth();
-  const [activated, setActivated] = useState(false);
   const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [alertsSent, setAlertsSent] = useState<{ time: string; location: string }[]>([]);
+  const [shakeEnabled, setShakeEnabled] = useState(true);
 
   useEffect(() => {
     if (user) loadContacts();
@@ -57,35 +58,74 @@ const SOS = () => {
     loadContacts();
   };
 
-  const handleSOS = () => {
-    setActivated(true);
-
-    // Try to get location
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          setLocation(loc);
-          toast({
-            title: "🚨 SOS Alert Sent!",
-            description: `Location shared: ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`,
-          });
-        },
-        () => {
-          toast({
-            title: "🚨 SOS Alert Sent!",
-            description: "Location access denied. Alert sent without location.",
-          });
-        }
-      );
-    }
-
-    setTimeout(() => setActivated(false), 3000);
-  };
-
   const callContact = (phone: string) => {
     window.open(`tel:${phone.replace(/\s/g, "")}`, "_self");
   };
+
+  const triggerSilentSOS = useCallback(() => {
+    if (!user || contacts.length === 0) return;
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const mapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
+          const now = new Date().toLocaleTimeString();
+
+          // Send SOS messages to all emergency contacts via SMS link
+          contacts.forEach((contact) => {
+            const message = encodeURIComponent(
+              `🚨 EMERGENCY ALERT\n\nThe user may be in danger.\n\nCurrent location:\n${mapsLink}\n\nPlease check immediately.`
+            );
+            // Open SMS intent silently by creating hidden links
+            const smsLink = `sms:${contact.phone.replace(/\s/g, "")}?body=${message}`;
+            const a = document.createElement("a");
+            a.href = smsLink;
+            a.style.display = "none";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          });
+
+          setAlertsSent((prev) => [
+            { time: now, location: mapsLink },
+            ...prev,
+          ]);
+        },
+        () => {
+          // Location denied — still attempt alert without coordinates
+          const now = new Date().toLocaleTimeString();
+          contacts.forEach((contact) => {
+            const message = encodeURIComponent(
+              `🚨 EMERGENCY ALERT\n\nThe user may be in danger.\nLocation unavailable.\n\nPlease check immediately.`
+            );
+            const smsLink = `sms:${contact.phone.replace(/\s/g, "")}?body=${message}`;
+            const a = document.createElement("a");
+            a.href = smsLink;
+            a.style.display = "none";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          });
+
+          setAlertsSent((prev) => [
+            { time: now, location: "Location unavailable" },
+            ...prev,
+          ]);
+        }
+      );
+    }
+  }, [user, contacts]);
+
+  // Shake detection hook
+  useShakeSOS({
+    threshold: 25,
+    requiredShakes: 3,
+    timeWindow: 5000,
+    onShakeDetected: triggerSilentSOS,
+    enabled: shakeEnabled,
+  });
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -96,33 +136,71 @@ const SOS = () => {
         </h1>
       </div>
 
-      <div className="flex flex-col items-center pt-10 px-6">
+      {/* Shake instruction */}
+      <div className="flex flex-col items-center pt-8 px-6">
+        <div className="w-28 h-28 rounded-full bg-sos/10 flex flex-col items-center justify-center gap-2 border-2 border-dashed border-sos/30">
+          <Vibrate className="w-8 h-8 text-sos" />
+          <span className="text-[10px] font-bold uppercase tracking-wider text-sos">Shake × 3</span>
+        </div>
+        <p className="text-sm text-muted-foreground mt-4 text-center max-w-xs">
+          Shake your phone <strong>3 times within 5 seconds</strong> to silently send an emergency alert with your location to all contacts below.
+        </p>
         <button
-          onClick={handleSOS}
-          className={`w-40 h-40 rounded-full flex flex-col items-center justify-center gap-2 transition-all duration-300 shadow-card ${
-            activated
-              ? "bg-sos text-sos-foreground scale-95 animate-pulse-soft"
-              : "bg-sos/10 text-sos hover:bg-sos hover:text-sos-foreground hover:scale-105"
+          onClick={() => setShakeEnabled((v) => !v)}
+          className={`mt-3 text-xs px-4 py-1.5 rounded-full font-medium transition-colors ${
+            shakeEnabled
+              ? "bg-sos/10 text-sos"
+              : "bg-muted text-muted-foreground"
           }`}
         >
-          <AlertTriangle className="w-10 h-10" />
-          <span className="text-sm font-bold uppercase tracking-wider">
-            {activated ? "Sent!" : "SOS"}
-          </span>
+          {shakeEnabled ? "Shake SOS Active" : "Shake SOS Disabled"}
         </button>
-        <p className="text-sm text-muted-foreground mt-4 text-center max-w-xs">
-          Tap the button to instantly share your location with emergency contacts
-        </p>
 
-        {location && (
-          <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground bg-secondary px-3 py-2 rounded-lg">
-            <Navigation className="w-3 h-3 text-primary" />
-            <span>{location.lat.toFixed(4)}, {location.lng.toFixed(4)}</span>
-          </div>
-        )}
+        {/* Manual trigger for testing */}
+        <button
+          onClick={triggerSilentSOS}
+          className="mt-3 text-[11px] text-muted-foreground underline"
+        >
+          Test SOS manually
+        </button>
       </div>
 
-      <div className="px-4 mt-10">
+      {/* Sent alerts log */}
+      {alertsSent.length > 0 && (
+        <div className="px-4 mt-6">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            Alert History
+          </h2>
+          <div className="space-y-2">
+            {alertsSent.map((alert, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-3 p-3 bg-destructive/10 rounded-xl border border-destructive/20 animate-fade-in"
+              >
+                <CheckCircle2 className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-destructive">🚨 SOS Alert Sent — {alert.time}</p>
+                  {alert.location !== "Location unavailable" ? (
+                    <a
+                      href={alert.location}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-primary underline truncate block"
+                    >
+                      {alert.location}
+                    </a>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground">Location unavailable</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Emergency Contacts */}
+      <div className="px-4 mt-8">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
             Emergency Contacts
