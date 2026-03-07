@@ -33,6 +33,12 @@ const parseSOSLocation = (msg: string): string | undefined => {
 
 const ChatBubble = ({ message, time, sent, translated, language, audioUrl, imageUrl, deleted, deletedForEveryone, status, onLongPress }: ChatBubbleProps) => {
   const location = message ? parseLocation(message) : null;
+  const sosAlert = message ? isSOSAlert(message) : false;
+
+  if (sosAlert) {
+    return <SOSAlertCard location={parseSOSLocation(message)} time={time} />;
+  }
+
   if (deleted || deletedForEveryone) {
     return (
       <div className={`flex ${sent ? "justify-end" : "justify-start"} mb-2.5 animate-fade-in`}>
