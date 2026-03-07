@@ -22,6 +22,15 @@ const parseLocation = (msg: string): { lat: number; lng: number } | null => {
   return null;
 };
 
+const isSOSAlert = (msg: string): boolean => {
+  return msg.includes("🚨 EMERGENCY ALERT");
+};
+
+const parseSOSLocation = (msg: string): string | undefined => {
+  const match = msg.match(/(https:\/\/www\.google\.com\/maps\?q=[^\s]+)/);
+  return match ? match[1] : undefined;
+};
+
 const ChatBubble = ({ message, time, sent, translated, language, audioUrl, imageUrl, deleted, deletedForEveryone, status, onLongPress }: ChatBubbleProps) => {
   const location = message ? parseLocation(message) : null;
   if (deleted || deletedForEveryone) {
