@@ -73,6 +73,11 @@ const SOS = () => {
           const mapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
           const now = new Date().toLocaleTimeString();
 
+          // Vibrate for 2 seconds as silent confirmation
+          if (navigator.vibrate) {
+            navigator.vibrate(2000);
+          }
+
           // Send SOS messages to all emergency contacts via SMS link
           contacts.forEach((contact) => {
             const message = encodeURIComponent(
