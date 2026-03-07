@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { Send, Mic, Paperclip, Sparkles, X, Square } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import AttachmentMenu from "./AttachmentMenu";
+import StickerSuggestions from "./StickerSuggestions";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
