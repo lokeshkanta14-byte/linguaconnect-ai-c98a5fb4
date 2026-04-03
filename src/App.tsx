@@ -21,6 +21,7 @@ import IncomingCall from "./pages/IncomingCall";
 import FindUsers from "./pages/FindUsers";
 import AIChat from "./pages/AIChat";
 import Status from "./pages/Status";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
           <div className="max-w-lg mx-auto min-h-screen bg-background relative">
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
               <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
