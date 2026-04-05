@@ -373,7 +373,7 @@ const AIChat = () => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 px-3 py-4 pb-20 overflow-y-auto">
+      <div className="flex-1 px-3 py-4 pb-28 overflow-y-auto">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 py-20">
             <Sparkles className="w-10 h-10 opacity-30" />
