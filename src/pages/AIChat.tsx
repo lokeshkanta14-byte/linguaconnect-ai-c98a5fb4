@@ -64,6 +64,7 @@ const AIChat = () => {
   const docRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   // Load last topic on mount
   useEffect(() => {
