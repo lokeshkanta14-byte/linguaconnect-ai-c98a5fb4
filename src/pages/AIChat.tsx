@@ -64,6 +64,7 @@ const AIChat = () => {
   const docRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   // Load last topic on mount
   useEffect(() => {
@@ -89,9 +90,25 @@ const AIChat = () => {
     loadMemory();
   }, []);
 
+  // Handle mobile keyboard visibility
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      const offset = window.innerHeight - vv.height;
+      setKeyboardOffset(offset > 100 ? offset : 0);
+    };
+    vv.addEventListener("resize", onResize);
+    vv.addEventListener("scroll", onResize);
+    return () => {
+      vv.removeEventListener("resize", onResize);
+      vv.removeEventListener("scroll", onResize);
+    };
+  }, []);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, keyboardOffset]);
 
   // Save topic after each user message
   const saveTopic = useCallback(async (topic: string) => {
@@ -426,7 +443,7 @@ const AIChat = () => {
 
       {/* Attachment Preview */}
       {(imagePreview || docAttachment) && (
-        <div className="fixed bottom-14 left-0 right-0 z-40 px-3 py-2">
+        <div className="fixed left-0 right-0 z-40 px-3 py-2 transition-all duration-150" style={{ bottom: `${keyboardOffset + 56}px` }}>
           <div className="max-w-3xl mx-auto flex items-start gap-2 bg-card border border-border rounded-xl p-2">
             {imagePreview && (
               <img src={imagePreview} alt="Preview" className="w-16 h-16 rounded-lg object-cover" />
@@ -452,7 +469,7 @@ const AIChat = () => {
       {/* Input */}
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFilePick} />
       <input ref={docRef} type="file" accept={DOC_ACCEPT} className="hidden" onChange={handleDocPick} />
-      <div className="fixed bottom-0 left-0 right-0 z-40 glass" style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}>
+      <div className="fixed left-0 right-0 z-40 glass transition-all duration-150" style={{ bottom: `${keyboardOffset}px`, paddingBottom: keyboardOffset > 0 ? '8px' : 'env(safe-area-inset-bottom, 8px)' }}>
         <div className="flex items-end gap-2 px-3 py-2 max-w-3xl mx-auto">
           <button
             onClick={openCamera}
