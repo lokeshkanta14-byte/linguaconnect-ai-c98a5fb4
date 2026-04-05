@@ -1,14 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Globe, Bell, Shield, Palette, LogOut, ChevronRight, Moon, Sun } from "lucide-react";
+import { User, Globe, Bell, Shield, LogOut, ChevronRight, Moon, Sun, Search } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-
-const LANGUAGES = ["English", "Telugu (తెలుగు)", "Hindi (हिन्दी)", "Tamil (தமிழ்)"];
+import { LANGUAGES, findLanguage, langLabel } from "@/lib/languages";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -16,6 +15,7 @@ const Settings = () => {
   const { theme, toggle } = useTheme();
   const [langOpen, setLangOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState("English");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -23,15 +23,27 @@ const Settings = () => {
       .then(({ data }) => { if (data?.preferred_language) setCurrentLang(data.preferred_language); });
   }, [user]);
 
-  const selectLanguage = async (lang: string) => {
-    setCurrentLang(lang);
+  const filteredLangs = useMemo(() => {
+    if (!search.trim()) return LANGUAGES;
+    const q = search.toLowerCase();
+    return LANGUAGES.filter(
+      (l) => l.name.toLowerCase().includes(q) || l.native.toLowerCase().includes(q) || l.code.toLowerCase().includes(q)
+    );
+  }, [search]);
+
+  const selectLanguage = async (langName: string) => {
+    setCurrentLang(langName);
     setLangOpen(false);
+    setSearch("");
     if (user) {
-      const { error } = await supabase.from("profiles").update({ preferred_language: lang }).eq("user_id", user.id);
+      const { error } = await supabase.from("profiles").update({ preferred_language: langName }).eq("user_id", user.id);
       if (error) toast({ title: "Failed to update language", variant: "destructive" });
-      else toast({ title: `Language set to ${lang}` });
+      else toast({ title: `Language set to ${langName}` });
     }
   };
+
+  const currentLangObj = findLanguage(currentLang);
+  const displayLang = currentLangObj ? langLabel(currentLangObj) : currentLang;
 
   const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
   const initials = displayName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
@@ -63,11 +75,10 @@ const Settings = () => {
 
       <div className="h-2 bg-secondary/30" />
 
-      {/* Account */}
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 pt-4 pb-2">Account</p>
       {[
         { icon: User, label: "Profile", path: "/profile" },
-        { icon: Globe, label: "Language", desc: currentLang, action: () => setLangOpen(true) },
+        { icon: Globe, label: "Language", desc: displayLang, action: () => setLangOpen(true) },
         { icon: Bell, label: "Notifications", desc: "On" },
       ].map((item) => (
         <button
@@ -87,7 +98,6 @@ const Settings = () => {
       ))}
       <div className="h-2 bg-secondary/30" />
 
-      {/* App */}
       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 pt-4 pb-2">App</p>
       <button
         onClick={toggle}
@@ -122,23 +132,39 @@ const Settings = () => {
         </div>
         <p className="text-sm font-medium text-destructive">Log Out</p>
       </button>
-      <Dialog open={langOpen} onOpenChange={setLangOpen}>
-        <DialogContent className="max-w-xs rounded-2xl">
+
+      {/* Language picker dialog */}
+      <Dialog open={langOpen} onOpenChange={(open) => { setLangOpen(open); if (!open) setSearch(""); }}>
+        <DialogContent className="max-w-xs rounded-2xl max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Select Language</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-1">
-            {LANGUAGES.map((lang) => (
+          <div className="relative mb-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search languages..."
+              className="w-full h-10 pl-9 pr-3 rounded-xl bg-secondary text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-all text-secondary-foreground placeholder:text-muted-foreground"
+              autoFocus
+            />
+          </div>
+          <div className="flex flex-col gap-0.5 overflow-y-auto max-h-[50vh] -mx-1 px-1">
+            {filteredLangs.map((lang) => (
               <button
-                key={lang}
-                onClick={() => selectLanguage(lang)}
-                className={`text-left px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                  currentLang === lang ? "bg-primary text-primary-foreground" : "hover:bg-secondary"
+                key={lang.code}
+                onClick={() => selectLanguage(lang.name)}
+                className={`text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-between ${
+                  currentLang === lang.name ? "bg-primary text-primary-foreground" : "hover:bg-secondary"
                 }`}
               >
-                {lang}
+                <span>{langLabel(lang)}</span>
+                {currentLang === lang.name && <span className="text-xs">✓</span>}
               </button>
             ))}
+            {filteredLangs.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">No languages found</p>
+            )}
           </div>
         </DialogContent>
       </Dialog>
