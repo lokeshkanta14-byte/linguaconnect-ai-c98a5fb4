@@ -373,7 +373,7 @@ const AIChat = () => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 px-3 py-4 pb-20 overflow-y-auto">
+      <div className="flex-1 px-3 py-4 pb-28 overflow-y-auto">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 py-20">
             <Sparkles className="w-10 h-10 opacity-30" />
@@ -452,7 +452,7 @@ const AIChat = () => {
       {/* Input */}
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFilePick} />
       <input ref={docRef} type="file" accept={DOC_ACCEPT} className="hidden" onChange={handleDocPick} />
-      <div className="fixed bottom-0 left-0 right-0 z-40 glass safe-bottom">
+      <div className="fixed bottom-0 left-0 right-0 z-40 glass" style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}>
         <div className="flex items-end gap-2 px-3 py-2 max-w-3xl mx-auto">
           <button
             onClick={openCamera}
