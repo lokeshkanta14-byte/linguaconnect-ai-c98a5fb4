@@ -452,7 +452,7 @@ const AIChat = () => {
       {/* Input */}
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFilePick} />
       <input ref={docRef} type="file" accept={DOC_ACCEPT} className="hidden" onChange={handleDocPick} />
-      <div className="fixed bottom-0 left-0 right-0 z-40 glass safe-bottom">
+      <div className="fixed bottom-0 left-0 right-0 z-40 glass" style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}>
         <div className="flex items-end gap-2 px-3 py-2 max-w-3xl mx-auto">
           <button
             onClick={openCamera}
