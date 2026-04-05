@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Sparkles, Camera, Image, X, FileText, Paperclip } from "lucide-react";
+import { ArrowLeft, Send, Sparkles, Camera, Image, X, FileText, Paperclip, Plus } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,6 +57,7 @@ const AIChat = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [docAttachment, setDocAttachment] = useState<DocAttachment | null>(null);
   const [showCamera, setShowCamera] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [lastTopic, setLastTopic] = useState<string | null>(null);
   const [welcomeShown, setWelcomeShown] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -470,38 +471,55 @@ const AIChat = () => {
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFilePick} />
       <input ref={docRef} type="file" accept={DOC_ACCEPT} className="hidden" onChange={handleDocPick} />
       <div className="fixed left-0 right-0 z-40 glass transition-all duration-150" style={{ bottom: `${keyboardOffset}px`, paddingBottom: keyboardOffset > 0 ? '8px' : 'env(safe-area-inset-bottom, 8px)' }}>
-        <div className="flex items-end gap-2 px-3 py-2 max-w-3xl mx-auto">
-          <button
-            onClick={openCamera}
-            className="p-2.5 text-muted-foreground hover:text-primary transition-colors rounded-full hover:bg-primary/10"
-          >
-            <Camera className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="p-2.5 text-muted-foreground hover:text-primary transition-colors rounded-full hover:bg-primary/10"
-          >
-            <Image className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => docRef.current?.click()}
-            className="p-2.5 text-muted-foreground hover:text-primary transition-colors rounded-full hover:bg-primary/10"
-          >
-            <Paperclip className="w-5 h-5" />
-          </button>
-          <div className="flex-1 flex items-end bg-card rounded-2xl px-3 py-1.5 border border-border">
+        <div className="flex items-end gap-1.5 px-3 py-2 max-w-3xl mx-auto">
+          {/* Plus menu toggle for attachments */}
+          <div className="relative">
+            <button
+              onClick={() => setShowAttachMenu(!showAttachMenu)}
+              className={`p-2.5 rounded-full transition-all ${showAttachMenu ? 'bg-primary text-primary-foreground rotate-45' : 'text-muted-foreground hover:text-primary hover:bg-primary/10'}`}
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+            {showAttachMenu && (
+              <div className="absolute bottom-12 left-0 flex gap-1 bg-card border border-border rounded-xl p-1.5 shadow-lg animate-fade-in">
+                <button
+                  onClick={() => { openCamera(); setShowAttachMenu(false); }}
+                  className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-primary/10 transition-colors"
+                  title="Camera"
+                >
+                  <Camera className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => { fileRef.current?.click(); setShowAttachMenu(false); }}
+                  className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-primary/10 transition-colors"
+                  title="Photo"
+                >
+                  <Image className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => { docRef.current?.click(); setShowAttachMenu(false); }}
+                  className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-primary/10 transition-colors"
+                  title="Document"
+                >
+                  <Paperclip className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="flex-1 flex items-end bg-card rounded-2xl px-3 py-1.5 border border-border min-w-0">
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send()}
+              onFocus={() => setShowAttachMenu(false)}
               placeholder="Ask anything..."
-              className="flex-1 bg-transparent text-sm py-1.5 outline-none text-card-foreground placeholder:text-muted-foreground"
+              className="flex-1 bg-transparent text-sm py-1.5 outline-none text-card-foreground placeholder:text-muted-foreground w-full"
             />
           </div>
           <button
             onClick={send}
             disabled={(!input.trim() && !imagePreview && !docAttachment) || isLoading}
-            className="p-2.5 bg-primary text-primary-foreground rounded-full hover:opacity-90 transition-opacity disabled:opacity-40"
+            className="p-2.5 bg-primary text-primary-foreground rounded-full hover:opacity-90 transition-opacity disabled:opacity-40 shrink-0"
           >
             <Send className="w-5 h-5" />
           </button>
