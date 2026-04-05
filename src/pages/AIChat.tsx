@@ -90,9 +90,25 @@ const AIChat = () => {
     loadMemory();
   }, []);
 
+  // Handle mobile keyboard visibility
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      const offset = window.innerHeight - vv.height;
+      setKeyboardOffset(offset > 100 ? offset : 0);
+    };
+    vv.addEventListener("resize", onResize);
+    vv.addEventListener("scroll", onResize);
+    return () => {
+      vv.removeEventListener("resize", onResize);
+      vv.removeEventListener("scroll", onResize);
+    };
+  }, []);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, keyboardOffset]);
 
   // Save topic after each user message
   const saveTopic = useCallback(async (topic: string) => {
