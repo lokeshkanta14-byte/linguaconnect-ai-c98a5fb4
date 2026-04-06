@@ -521,7 +521,7 @@ const AIChat = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send()}
-              onFocus={() => setShowAttachMenu(false)}
+              onFocus={() => { setShowAttachMenu(false); scrollToBottom("instant"); }}
               placeholder="Ask anything..."
               className="flex-1 bg-transparent text-sm py-1.5 outline-none text-card-foreground placeholder:text-muted-foreground w-full"
             />
