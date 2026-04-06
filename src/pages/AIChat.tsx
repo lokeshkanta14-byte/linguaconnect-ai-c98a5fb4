@@ -107,7 +107,7 @@ const AIChat = () => {
     const onResize = () => {
       const offset = window.innerHeight - vv.height;
       setKeyboardOffset(offset > 100 ? offset : 0);
-      // Keep chat at bottom when keyboard opens
+      setViewportHeight(vv.height);
       scrollToBottom("instant");
     };
     vv.addEventListener("resize", onResize);
