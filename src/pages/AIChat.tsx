@@ -379,9 +379,9 @@ const AIChat = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="fixed inset-0 bg-background flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-30 glass px-2 py-2 border-b border-border/50">
+      <div className="shrink-0 z-30 glass px-2 py-2 border-b border-border/50">
         <div className="flex items-center gap-2">
           <button onClick={() => navigate("/")} className="p-2 hover:bg-secondary rounded-full transition-colors">
             <ArrowLeft className="w-5 h-5" />
@@ -401,7 +401,7 @@ const AIChat = () => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 px-3 py-4 pb-28 overflow-y-auto">
+      <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-3 py-4" style={{ paddingBottom: `${(imagePreview || docAttachment ? 80 : 0) + 64 + keyboardOffset}px` }}>
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 py-20">
             <Sparkles className="w-10 h-10 opacity-30" />
@@ -454,7 +454,7 @@ const AIChat = () => {
 
       {/* Attachment Preview */}
       {(imagePreview || docAttachment) && (
-        <div className="fixed left-0 right-0 z-40 px-3 py-2 transition-all duration-150" style={{ bottom: `${keyboardOffset + 56}px` }}>
+        <div className="shrink-0 z-40 px-3 py-2 bg-background border-t border-border/50">
           <div className="max-w-3xl mx-auto flex items-start gap-2 bg-card border border-border rounded-xl p-2">
             {imagePreview && (
               <img src={imagePreview} alt="Preview" className="w-16 h-16 rounded-lg object-cover" />
@@ -480,7 +480,7 @@ const AIChat = () => {
       {/* Input */}
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFilePick} />
       <input ref={docRef} type="file" accept={DOC_ACCEPT} className="hidden" onChange={handleDocPick} />
-      <div className="fixed left-0 right-0 z-40 glass transition-all duration-150" style={{ bottom: `${keyboardOffset}px`, paddingBottom: keyboardOffset > 0 ? '8px' : 'env(safe-area-inset-bottom, 8px)' }}>
+      <div className="shrink-0 z-40 glass border-t border-border/50" style={{ paddingBottom: keyboardOffset > 0 ? '8px' : 'env(safe-area-inset-bottom, 8px)' }}>
         <div className="flex items-end gap-1.5 px-3 py-2 max-w-3xl mx-auto">
           {/* Plus menu toggle for attachments */}
           <div className="relative">
