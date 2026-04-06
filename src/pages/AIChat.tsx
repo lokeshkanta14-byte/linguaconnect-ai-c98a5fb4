@@ -379,10 +379,10 @@ const AIChat = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-background flex flex-col">
+    <div className="fixed inset-0 bg-background flex flex-col" style={{ height: `${window.visualViewport?.height || window.innerHeight}px` }}>
       {/* Header */}
       <div className="shrink-0 z-30 glass px-2 py-2 border-b border-border/50">
-        <div className="flex items-center gap-2">
+        <div className="max-w-[800px] mx-auto flex items-center gap-2">
           <button onClick={() => navigate("/")} className="p-2 hover:bg-secondary rounded-full transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -401,61 +401,63 @@ const AIChat = () => {
       </div>
 
       {/* Messages */}
-      <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-3 py-4" style={{ paddingBottom: `${(imagePreview || docAttachment ? 80 : 0) + 64 + keyboardOffset}px` }}>
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 py-20">
-            <Sparkles className="w-10 h-10 opacity-30" />
-            <p className="text-sm font-medium">Ask me anything in any language</p>
-            <p className="text-xs">Send text, images, or documents — I can analyze them all</p>
-          </div>
-        )}
-        {messages.map((msg, i) => {
-          const text = getMsgText(msg);
-          const image = getMsgImage(msg);
-          return (
-            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} mb-2.5`}>
-              <div
-                className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 shadow-sm ${
-                  msg.role === "user"
-                    ? "bg-primary text-primary-foreground rounded-br-md"
-                    : "bg-card border border-border rounded-bl-md"
-                }`}
-              >
-                {msg.doc && (
-                  <div className="flex items-center gap-2 mb-2 p-2 rounded-lg bg-secondary/50">
-                    <FileText className="w-5 h-5 text-primary shrink-0" />
-                    <span className="text-xs font-medium truncate">{msg.doc.name}</span>
-                  </div>
-                )}
-                {image && (
-                  <img src={image} alt={msg.role === "assistant" ? "AI edited image" : "Shared"} className="rounded-lg mb-2 max-h-64 w-auto object-cover cursor-pointer" onClick={() => image && window.open(image, '_blank')} />
-                )}
-                {text && <p className="text-sm whitespace-pre-wrap leading-relaxed">{text}</p>}
-                <p className={`text-[10px] mt-1 text-right ${msg.role === "user" ? "opacity-60" : "text-muted-foreground"}`}>
-                  {formatTime()}
-                </p>
+      <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-3 py-4">
+        <div className="max-w-[800px] mx-auto" style={{ paddingBottom: `${(imagePreview || docAttachment ? 80 : 0) + 16}px` }}>
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 py-20">
+              <Sparkles className="w-10 h-10 opacity-30" />
+              <p className="text-sm font-medium">Ask me anything in any language</p>
+              <p className="text-xs">Send text, images, or documents — I can analyze them all</p>
+            </div>
+          )}
+          {messages.map((msg, i) => {
+            const text = getMsgText(msg);
+            const image = getMsgImage(msg);
+            return (
+              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} mb-2.5`}>
+                <div
+                  className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 shadow-sm ${
+                    msg.role === "user"
+                      ? "bg-primary text-primary-foreground rounded-br-md"
+                      : "bg-card border border-border rounded-bl-md"
+                  }`}
+                >
+                  {msg.doc && (
+                    <div className="flex items-center gap-2 mb-2 p-2 rounded-lg bg-secondary/50">
+                      <FileText className="w-5 h-5 text-primary shrink-0" />
+                      <span className="text-xs font-medium truncate">{msg.doc.name}</span>
+                    </div>
+                  )}
+                  {image && (
+                    <img src={image} alt={msg.role === "assistant" ? "AI edited image" : "Shared"} className="rounded-lg mb-2 max-h-64 w-auto object-cover cursor-pointer" onClick={() => image && window.open(image, '_blank')} />
+                  )}
+                  {text && <p className="text-sm whitespace-pre-wrap leading-relaxed">{text}</p>}
+                  <p className={`text-[10px] mt-1 text-right ${msg.role === "user" ? "opacity-60" : "text-muted-foreground"}`}>
+                    {formatTime()}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+          {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
+            <div className="flex justify-start mb-2.5">
+              <div className="bg-card border border-border rounded-2xl rounded-bl-md px-4 py-3">
+                <div className="flex gap-1">
+                  <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
               </div>
             </div>
-          );
-        })}
-        {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-          <div className="flex justify-start mb-2.5">
-            <div className="bg-card border border-border rounded-2xl rounded-bl-md px-4 py-3">
-              <div className="flex gap-1">
-                <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-              </div>
-            </div>
-          </div>
-        )}
-        <div ref={bottomRef} />
+          )}
+          <div ref={bottomRef} />
+        </div>
       </div>
 
       {/* Attachment Preview */}
       {(imagePreview || docAttachment) && (
         <div className="shrink-0 z-40 px-3 py-2 bg-background border-t border-border/50">
-          <div className="max-w-3xl mx-auto flex items-start gap-2 bg-card border border-border rounded-xl p-2">
+          <div className="max-w-[800px] mx-auto flex items-start gap-2 bg-card border border-border rounded-xl p-2">
             {imagePreview && (
               <img src={imagePreview} alt="Preview" className="w-16 h-16 rounded-lg object-cover" />
             )}
@@ -481,7 +483,7 @@ const AIChat = () => {
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFilePick} />
       <input ref={docRef} type="file" accept={DOC_ACCEPT} className="hidden" onChange={handleDocPick} />
       <div className="shrink-0 z-40 glass border-t border-border/50" style={{ paddingBottom: keyboardOffset > 0 ? '8px' : 'env(safe-area-inset-bottom, 8px)' }}>
-        <div className="flex items-end gap-1.5 px-3 py-2 max-w-3xl mx-auto">
+        <div className="flex items-end gap-1.5 px-3 py-2 max-w-[800px] mx-auto">
           {/* Plus menu toggle for attachments */}
           <div className="relative">
             <button
