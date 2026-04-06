@@ -380,7 +380,7 @@ const AIChat = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-background flex flex-col" style={{ height: `${window.visualViewport?.height || window.innerHeight}px` }}>
+    <div className="fixed inset-x-0 top-0 bg-background flex flex-col" style={{ height: `${viewportHeight}px` }}>
       {/* Header */}
       <div className="shrink-0 z-30 glass px-2 py-2 border-b border-border/50">
         <div className="max-w-[800px] mx-auto flex items-center gap-2">
