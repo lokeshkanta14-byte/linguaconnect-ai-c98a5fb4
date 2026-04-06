@@ -49,6 +49,11 @@ const readFileAsText = (file: File): Promise<string> =>
     reader.readAsText(file);
   });
 
+const getViewportState = () => ({
+  height: window.visualViewport?.height ?? window.innerHeight,
+  offsetTop: window.visualViewport?.offsetTop ?? 0,
+});
+
 const AIChat = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -60,13 +65,12 @@ const AIChat = () => {
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [lastTopic, setLastTopic] = useState<string | null>(null);
   const [welcomeShown, setWelcomeShown] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const docRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [keyboardOffset, setKeyboardOffset] = useState(0);
-  const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const [viewport, setViewport] = useState(getViewportState);
 
   // Load last topic on mount
   useEffect(() => {
@@ -92,24 +96,28 @@ const AIChat = () => {
     loadMemory();
   }, []);
 
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     requestAnimationFrame(() => {
-      bottomRef.current?.scrollIntoView({ behavior });
+      const chatContainer = chatContainerRef.current;
+      if (!chatContainer) return;
+      chatContainer.scrollTo({
+        top: chatContainer.scrollHeight,
+        behavior,
+      });
     });
   }, []);
 
   // Handle mobile keyboard visibility
   useEffect(() => {
     const vv = window.visualViewport;
-    if (!vv) return;
     const onResize = () => {
-      const offset = window.innerHeight - vv.height;
-      setKeyboardOffset(offset > 100 ? offset : 0);
-      setViewportHeight(vv.height);
-      scrollToBottom("instant");
+      setViewport(getViewportState());
+      scrollToBottom("auto");
     };
+
+    onResize();
+    if (!vv) return;
+
     vv.addEventListener("resize", onResize);
     vv.addEventListener("scroll", onResize);
     return () => {
@@ -380,7 +388,14 @@ const AIChat = () => {
   }
 
   return (
-    <div className="fixed inset-x-0 top-0 bg-background flex flex-col" style={{ height: `${viewportHeight}px` }}>
+    <div
+      className="fixed inset-x-0 bg-background flex h-dvh min-h-screen flex-col overflow-hidden"
+      style={{
+        top: `${viewport.offsetTop}px`,
+        height: `${viewport.height}px`,
+        minHeight: "100vh",
+      }}
+    >
       {/* Header */}
       <div className="shrink-0 z-30 glass px-2 py-2 border-b border-border/50">
         <div className="max-w-[800px] mx-auto flex items-center gap-2">
@@ -402,8 +417,8 @@ const AIChat = () => {
       </div>
 
       {/* Messages */}
-      <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-3 py-4">
-        <div className="max-w-[800px] mx-auto" style={{ paddingBottom: `${(imagePreview || docAttachment ? 80 : 0) + 16}px` }}>
+      <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-3 py-4 overscroll-contain">
+        <div className="max-w-[800px] mx-auto w-full pb-4">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 py-20">
               <Sparkles className="w-10 h-10 opacity-30" />
@@ -451,7 +466,6 @@ const AIChat = () => {
               </div>
             </div>
           )}
-          <div ref={bottomRef} />
         </div>
       </div>
 
@@ -483,7 +497,10 @@ const AIChat = () => {
       {/* Input */}
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFilePick} />
       <input ref={docRef} type="file" accept={DOC_ACCEPT} className="hidden" onChange={handleDocPick} />
-      <div className="shrink-0 z-40 glass border-t border-border/50" style={{ paddingBottom: keyboardOffset > 0 ? '8px' : 'env(safe-area-inset-bottom, 8px)' }}>
+      <div
+        className="sticky bottom-0 shrink-0 z-40 glass border-t border-border/50"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)" }}
+      >
         <div className="flex items-end gap-1.5 px-3 py-2 max-w-[800px] mx-auto">
           {/* Plus menu toggle for attachments */}
           <div className="relative">
@@ -524,7 +541,10 @@ const AIChat = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send()}
-              onFocus={() => { setShowAttachMenu(false); scrollToBottom("instant"); }}
+              onFocus={() => {
+                setShowAttachMenu(false);
+                scrollToBottom("auto");
+              }}
               placeholder="Ask anything..."
               className="flex-1 bg-transparent text-sm py-1.5 outline-none text-card-foreground placeholder:text-muted-foreground w-full"
             />
