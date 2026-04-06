@@ -91,6 +91,14 @@ const AIChat = () => {
     loadMemory();
   }, []);
 
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior });
+    });
+  }, []);
+
   // Handle mobile keyboard visibility
   useEffect(() => {
     const vv = window.visualViewport;
@@ -98,6 +106,8 @@ const AIChat = () => {
     const onResize = () => {
       const offset = window.innerHeight - vv.height;
       setKeyboardOffset(offset > 100 ? offset : 0);
+      // Keep chat at bottom when keyboard opens
+      scrollToBottom("instant");
     };
     vv.addEventListener("resize", onResize);
     vv.addEventListener("scroll", onResize);
@@ -105,11 +115,11 @@ const AIChat = () => {
       vv.removeEventListener("resize", onResize);
       vv.removeEventListener("scroll", onResize);
     };
-  }, []);
+  }, [scrollToBottom]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, keyboardOffset]);
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
   // Save topic after each user message
   const saveTopic = useCallback(async (topic: string) => {
@@ -511,7 +521,7 @@ const AIChat = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send()}
-              onFocus={() => setShowAttachMenu(false)}
+              onFocus={() => { setShowAttachMenu(false); scrollToBottom("instant"); }}
               placeholder="Ask anything..."
               className="flex-1 bg-transparent text-sm py-1.5 outline-none text-card-foreground placeholder:text-muted-foreground w-full"
             />
