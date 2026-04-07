@@ -388,14 +388,7 @@ const AIChat = () => {
   }
 
   return (
-    <div
-      className="fixed inset-x-0 bg-background flex h-dvh min-h-screen flex-col overflow-hidden"
-      style={{
-        top: `${viewport.offsetTop}px`,
-        height: `${viewport.height}px`,
-        minHeight: "100vh",
-      }}
-    >
+    <div className="fixed inset-0 bg-background flex flex-col" style={{ height: "100dvh", minHeight: "100vh" }}>
       {/* Header */}
       <div className="shrink-0 z-30 glass px-2 py-2 border-b border-border/50">
         <div className="max-w-[800px] mx-auto flex items-center gap-2">
@@ -416,9 +409,9 @@ const AIChat = () => {
         </div>
       </div>
 
-      {/* Messages */}
-      <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-3 py-4 overscroll-contain">
-        <div className="max-w-[800px] mx-auto w-full pb-4">
+      {/* Messages - scrollable, with bottom padding for fixed input */}
+      <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-3 py-4 overscroll-contain pb-36">
+        <div className="max-w-[800px] mx-auto w-full">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 py-20">
               <Sparkles className="w-10 h-10 opacity-30" />
@@ -469,40 +462,38 @@ const AIChat = () => {
         </div>
       </div>
 
-      {/* Attachment Preview */}
-      {(imagePreview || docAttachment) && (
-        <div className="shrink-0 z-40 px-3 py-2 bg-background border-t border-border/50">
-          <div className="max-w-[800px] mx-auto flex items-start gap-2 bg-card border border-border rounded-xl p-2">
-            {imagePreview && (
-              <img src={imagePreview} alt="Preview" className="w-16 h-16 rounded-lg object-cover" />
-            )}
-            {docAttachment && !imagePreview && (
-              <div className="w-16 h-16 rounded-lg bg-secondary flex items-center justify-center">
-                <FileText className="w-6 h-6 text-primary" />
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-muted-foreground truncate">
-                {docAttachment ? docAttachment.name : "Image attached"}
-              </p>
-              <p className="text-[10px] text-muted-foreground">Add a message or send directly</p>
-            </div>
-            <button onClick={() => { setImagePreview(null); setDocAttachment(null); }} className="p-1 hover:bg-secondary rounded-full">
-              <X className="w-4 h-4 text-muted-foreground" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Input */}
+      {/* Fixed bottom input area */}
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFilePick} />
       <input ref={docRef} type="file" accept={DOC_ACCEPT} className="hidden" onChange={handleDocPick} />
-      <div
-        className="sticky bottom-0 shrink-0 z-40 glass border-t border-border/50"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)" }}
-      >
+
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border/50" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+        {/* Attachment Preview */}
+        {(imagePreview || docAttachment) && (
+          <div className="px-3 py-2 border-b border-border/50">
+            <div className="max-w-[800px] mx-auto flex items-start gap-2 bg-card border border-border rounded-xl p-2">
+              {imagePreview && (
+                <img src={imagePreview} alt="Preview" className="w-16 h-16 rounded-lg object-cover" />
+              )}
+              {docAttachment && !imagePreview && (
+                <div className="w-16 h-16 rounded-lg bg-secondary flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-primary" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground truncate">
+                  {docAttachment ? docAttachment.name : "Image attached"}
+                </p>
+                <p className="text-[10px] text-muted-foreground">Add a message or send directly</p>
+              </div>
+              <button onClick={() => { setImagePreview(null); setDocAttachment(null); }} className="p-1 hover:bg-secondary rounded-full">
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Input row */}
         <div className="flex items-end gap-1.5 px-3 py-2 max-w-[800px] mx-auto">
-          {/* Plus menu toggle for attachments */}
           <div className="relative">
             <button
               onClick={() => setShowAttachMenu(!showAttachMenu)}
@@ -512,25 +503,13 @@ const AIChat = () => {
             </button>
             {showAttachMenu && (
               <div className="absolute bottom-12 left-0 flex gap-1 bg-card border border-border rounded-xl p-1.5 shadow-lg animate-fade-in">
-                <button
-                  onClick={() => { openCamera(); setShowAttachMenu(false); }}
-                  className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-primary/10 transition-colors"
-                  title="Camera"
-                >
+                <button onClick={() => { openCamera(); setShowAttachMenu(false); }} className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-primary/10 transition-colors" title="Camera">
                   <Camera className="w-5 h-5" />
                 </button>
-                <button
-                  onClick={() => { fileRef.current?.click(); setShowAttachMenu(false); }}
-                  className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-primary/10 transition-colors"
-                  title="Photo"
-                >
+                <button onClick={() => { fileRef.current?.click(); setShowAttachMenu(false); }} className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-primary/10 transition-colors" title="Photo">
                   <Image className="w-5 h-5" />
                 </button>
-                <button
-                  onClick={() => { docRef.current?.click(); setShowAttachMenu(false); }}
-                  className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-primary/10 transition-colors"
-                  title="Document"
-                >
+                <button onClick={() => { docRef.current?.click(); setShowAttachMenu(false); }} className="p-2 text-muted-foreground hover:text-primary rounded-lg hover:bg-primary/10 transition-colors" title="Document">
                   <Paperclip className="w-5 h-5" />
                 </button>
               </div>
