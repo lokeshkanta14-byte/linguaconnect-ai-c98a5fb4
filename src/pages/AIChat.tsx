@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, Sparkles, Camera, Image, X, FileText, Paperclip, Plus } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -49,10 +49,18 @@ const readFileAsText = (file: File): Promise<string> =>
     reader.readAsText(file);
   });
 
-const getViewportState = () => ({
-  height: window.visualViewport?.height ?? window.innerHeight,
-  offsetTop: window.visualViewport?.offsetTop ?? 0,
-});
+const getViewportMetrics = () => {
+  const vv = window.visualViewport;
+  const height = vv?.height ?? window.innerHeight;
+  const offsetTop = vv?.offsetTop ?? 0;
+  const keyboardInset = Math.max(0, window.innerHeight - height - offsetTop);
+
+  return {
+    height,
+    offsetTop,
+    keyboardInset,
+  };
+};
 
 const AIChat = () => {
   const navigate = useNavigate();
@@ -71,7 +79,9 @@ const AIChat = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const [viewport, setViewport] = useState(getViewportState);
+  const inputBarRef = useRef<HTMLDivElement>(null);
+  const [viewport, setViewport] = useState(getViewportMetrics);
+  const [inputBarHeight, setInputBarHeight] = useState(96);
 
   // Load last topic on mount
   useEffect(() => {
@@ -112,8 +122,7 @@ const AIChat = () => {
   useEffect(() => {
     const vv = window.visualViewport;
     const onResize = () => {
-      setViewport(getViewportState());
-      scrollToBottom("auto");
+      setViewport(getViewportMetrics());
     };
 
     onResize();
@@ -126,6 +135,30 @@ const AIChat = () => {
       vv.removeEventListener("scroll", onResize);
     };
   }, [scrollToBottom]);
+
+  useEffect(() => {
+    const measureInputBar = () => {
+      const nextHeight = inputBarRef.current?.offsetHeight;
+      if (nextHeight) setInputBarHeight(nextHeight);
+    };
+
+    measureInputBar();
+
+    if (typeof ResizeObserver === "undefined" || !inputBarRef.current) return;
+
+    const observer = new ResizeObserver(measureInputBar);
+    observer.observe(inputBarRef.current);
+
+    return () => observer.disconnect();
+  }, [imagePreview, docAttachment, showAttachMenu]);
+
+  const inputBarStyle = useMemo(
+    () => ({
+      bottom: `${viewport.keyboardInset}px`,
+      paddingBottom: "env(safe-area-inset-bottom, 0px)",
+    }),
+    [viewport.keyboardInset],
+  );
 
   // Track scroll position to know if user is near bottom
   useEffect(() => {
@@ -426,7 +459,11 @@ const AIChat = () => {
       </div>
 
       {/* Messages - scrollable, with bottom padding for fixed input */}
-      <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-3 py-4 overscroll-contain pb-36">
+      <div
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto px-3 py-4 overscroll-contain"
+        style={{ paddingBottom: `${inputBarHeight + viewport.keyboardInset + 24}px` }}
+      >
         <div className="max-w-[800px] mx-auto w-full">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 py-20">
@@ -482,7 +519,11 @@ const AIChat = () => {
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFilePick} />
       <input ref={docRef} type="file" accept={DOC_ACCEPT} className="hidden" onChange={handleDocPick} />
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border/50" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      <div
+        ref={inputBarRef}
+        className="fixed left-0 right-0 z-50 bg-background border-t border-border/50"
+        style={inputBarStyle}
+      >
         {/* Attachment Preview */}
         {(imagePreview || docAttachment) && (
           <div className="px-3 py-2 border-b border-border/50">
