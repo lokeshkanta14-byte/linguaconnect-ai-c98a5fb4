@@ -39,10 +39,10 @@ const CopyButton = ({ text }: { text: string }) => {
   return (
     <button
       onClick={copy}
-      className="flex items-center gap-1 px-2 py-1 text-[11px] rounded-md bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+      className="flex items-center gap-1 px-2 py-1 min-h-[28px] min-w-[52px] text-[11px] rounded-md bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors shrink-0"
     >
-      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-      {copied ? "Copied" : "Copy"}
+      {copied ? <Check className="w-3 h-3 shrink-0" /> : <Copy className="w-3 h-3 shrink-0" />}
+      <span className="whitespace-nowrap">{copied ? "Copied" : "Copy"}</span>
     </button>
   );
 };
@@ -60,9 +60,9 @@ const AIChatMessage = ({ text }: { text: string }) => {
         seg.type === "text" ? (
           <p key={i} className="whitespace-pre-wrap">{seg.value}</p>
         ) : (
-          <div key={i} className="relative rounded-lg overflow-hidden border border-border bg-muted/50">
-            <div className="flex items-center justify-between px-3 py-1.5 bg-muted/80 border-b border-border">
-              <span className="text-[11px] text-muted-foreground font-mono">{seg.lang}</span>
+          <div key={i} className="rounded-lg border border-border bg-muted/50 overflow-hidden">
+            <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-muted/80 border-b border-border min-w-0">
+              <span className="text-[11px] text-muted-foreground font-mono truncate">{seg.lang}</span>
               <CopyButton text={seg.value} />
             </div>
             <pre className="overflow-x-auto p-3 text-xs font-mono">
