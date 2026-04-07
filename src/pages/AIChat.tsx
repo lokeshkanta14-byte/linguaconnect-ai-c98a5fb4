@@ -57,6 +57,7 @@ const getViewportState = () => ({
 const AIChat = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Msg[]>([]);
+  const isNearBottomRef = useRef(true);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -126,8 +127,23 @@ const AIChat = () => {
     };
   }, [scrollToBottom]);
 
+  // Track scroll position to know if user is near bottom
   useEffect(() => {
-    scrollToBottom();
+    const container = chatContainerRef.current;
+    if (!container) return;
+    const onScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < 100;
+    };
+    container.addEventListener("scroll", onScroll, { passive: true });
+    return () => container.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Only auto-scroll when user is near bottom
+  useEffect(() => {
+    if (isNearBottomRef.current) {
+      scrollToBottom();
+    }
   }, [messages, scrollToBottom]);
 
   // Save topic after each user message
