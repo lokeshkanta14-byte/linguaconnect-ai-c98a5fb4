@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, Sparkles, Camera, Image, X, FileText, Paperclip, Plus } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import AIChatMessage from "@/components/AIChatMessage";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -493,7 +494,11 @@ const AIChat = () => {
                   {image && (
                     <img src={image} alt={msg.role === "assistant" ? "AI edited image" : "Shared"} className="rounded-lg mb-2 max-h-64 w-auto object-cover cursor-pointer" onClick={() => image && window.open(image, '_blank')} />
                   )}
-                  {text && <p className="text-sm whitespace-pre-wrap leading-relaxed">{text}</p>}
+                  {text && (
+                    msg.role === "assistant"
+                      ? <AIChatMessage text={text} />
+                      : <p className="text-sm whitespace-pre-wrap leading-relaxed">{text}</p>
+                  )}
                   <p className={`text-[10px] mt-1 text-right ${msg.role === "user" ? "opacity-60" : "text-muted-foreground"}`}>
                     {formatTime()}
                   </p>
